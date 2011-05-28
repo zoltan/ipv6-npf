@@ -75,8 +75,8 @@ void		npfctl_init_data(void);
 int		npfctl_ioctl_send(int);
 
 struct ifaddrs *npfctl_getif(char *, unsigned int *, bool, sa_family_t);
-bool		npfctl_parse_v4mask(char *, in_addr_t *, in_addr_t *);
-void		npfctl_parse_cidr(char *, in_addr_t *, in_addr_t *);
+bool		npfctl_parse_v4mask(char *, npf_addr_t *, npf_addr_t *);
+void		npfctl_parse_cidr(char *, npf_addr_t *, npf_addr_t *);
 bool		npfctl_parse_port(char *, bool *, in_port_t *, in_port_t *);
 
 void		npfctl_fill_table(nl_table_t *, char *);
@@ -89,7 +89,7 @@ size_t		npfctl_failure_offset(int []);
 
 void		npfctl_gennc_ether(void **, int, uint16_t);
 void		npfctl_gennc_v4cidr(void **, int,
-		    in_addr_t, in_addr_t, bool);
+		    npf_addr_t, npf_addr_t, bool);
 void		npfctl_gennc_icmp(void **, int, int, int);
 void		npfctl_gennc_tcpfl(void **, int , uint8_t, uint8_t);
 void		npfctl_gennc_ports(void **, int,

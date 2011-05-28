@@ -105,23 +105,26 @@ npfctl_getif(char *ifname, unsigned int *if_idx, bool reqaddr, sa_family_t addrt
 }
 
 bool
-npfctl_parse_v4mask(char *ostr, in_addr_t *addr, in_addr_t *mask)
+npfctl_parse_v4mask(char *ostr, npf_addr_t *addr, npf_addr_t *mask)
 {
 	char *str = xstrdup(ostr);
 	char *p = strchr(str, '/');
 	u_int bits;
 	bool ret;
+	in_addr_t v4mask;
 
 	/* In network byte order. */
 	if (p) {
 		*p++ = '\0';
 		bits = (u_int)atoi(p);
-		*mask = bits ? htonl(0xffffffff << (32 - bits)) : 0;
+		v4mask = bits ? htonl(0xffffffff << (32 - bits)) : 0;
 	} else {
-		*mask = 0xffffffff;
+		v4mask = 0xffffffff;
 	}
 	ret = inet_aton(str, (struct in_addr *)addr) != 0;
 	free(str);
+	
+	memcpy(mask, &v4mask, sizeof(in_addr_t));
 	return ret;
 }
 
@@ -154,12 +157,13 @@ npfctl_parse_port(char *ostr, bool *range, in_port_t *fport, in_port_t *tport)
 }
 
 void
-npfctl_parse_cidr(char *str, in_addr_t *addr, in_addr_t *mask)
+npfctl_parse_cidr(char *str, npf_addr_t *addr, npf_addr_t *mask)
 {
-	if (strcmp(str, "any") == 0) {
-		*addr = 0x0;
-		*mask = 0x0;
+	in_addr_t v4addr, v4mask;
 
+	if (strcmp(str, "any") == 0) {
+		v4addr = 0x0;
+		v4mask = 0x0;
 	} else if (isalpha((unsigned char)*str)) {
 		struct ifaddrs *ifa;
 		struct sockaddr_in *sin;
@@ -170,12 +174,14 @@ npfctl_parse_cidr(char *str, in_addr_t *addr, in_addr_t *mask)
 		}
 		/* Interface address. */
 		sin = (struct sockaddr_in *)ifa->ifa_addr;
-		*addr = sin->sin_addr.s_addr;
-		*mask = 0xffffffff;
-
+		memcpy(&v4addr, &sin->sin_addr.s_addr, sizeof(struct in_addr));
+		v4mask = 0xffffffff;
 	} else if (!npfctl_parse_v4mask(str, addr, mask)) {
 		errx(EXIT_FAILURE, "invalid CIDR '%s'\n", str);
 	}
+
+	memcpy(addr, &v4addr, sizeof(in_addr_t));
+	memcpy(mask, &v4mask, sizeof(in_addr_t));
 }
 
 static bool
@@ -227,7 +233,7 @@ npfctl_fill_table(nl_table_t *tl, char *fname)
 	l = 1;
 	buf = NULL;
 	while (getline(&buf, &n, fp) != -1) {
-		in_addr_t addr, mask;
+		npf_addr_t addr, mask;
 
 		if (*buf == '\n' || *buf == '#')
 			continue;
@@ -268,7 +274,7 @@ npfctl_rulenc_v4cidr(void **nc, int nblocks[], var_t *dat, bool sd)
 
 	/* Generate v4 CIDR matching blocks. */
 	for (el = dat->v_elements; el != NULL; el = el->e_next) {
-		in_addr_t addr, mask;
+		npf_addr_t addr, mask;
 
 		npfctl_parse_cidr(el->e_data, &addr, &mask);
 
