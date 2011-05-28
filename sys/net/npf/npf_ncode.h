@@ -116,6 +116,8 @@ int	npf_ncode_validate(const void *, size_t, int *);
 #define	NPF_OPCODE_IP4MASK		0x90
 #define	NPF_OPCODE_IP4TABLE		0x91
 #define	NPF_OPCODE_ICMP4		0x92
+#define	NPF_OPCODE_IP6MASK		0x93
+#define	NPF_OPCODE_IP6TABLE		0x94
 
 #define	NPF_OPCODE_TCP_PORTS		0xa0
 #define	NPF_OPCODE_UDP_PORTS		0xa1
