@@ -86,14 +86,14 @@ npfctl_ioctl_send(int fd)
  */
 
 struct ifaddrs *
-npfctl_getif(char *ifname, unsigned int *if_idx, bool reqaddr)
+npfctl_getif(char *ifname, unsigned int *if_idx, bool reqaddr, sa_family_t addrtype)
 {
 	struct ifaddrs *ifent;
 	struct sockaddr_in *sin;
 
 	for (ifent = ifs_list; ifent != NULL; ifent = ifent->ifa_next) {
 		sin = (struct sockaddr_in *)ifent->ifa_addr;
-		if (sin->sin_family != AF_INET && reqaddr)
+		if (sin->sin_family != addrtype && reqaddr)
 			continue;
 		if (strcmp(ifent->ifa_name, ifname) == 0)
 			break;
@@ -166,7 +166,7 @@ npfctl_parse_cidr(char *str, in_addr_t *addr, in_addr_t *mask)
 		struct sockaddr_in *sin;
 		u_int idx;
 
-		if ((ifa = npfctl_getif(str, &idx, true)) == NULL) {
+		if ((ifa = npfctl_getif(str, &idx, true, AF_INET)) == NULL) {
 			errx(EXIT_FAILURE, "invalid interface '%s'", str);
 		}
 		/* Interface address. */

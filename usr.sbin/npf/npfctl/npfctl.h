@@ -74,7 +74,7 @@ char *		xstrdup(const char *);
 void		npfctl_init_data(void);
 int		npfctl_ioctl_send(int);
 
-struct ifaddrs *npfctl_getif(char *, unsigned int *, bool);
+struct ifaddrs *npfctl_getif(char *, unsigned int *, bool, sa_family_t);
 bool		npfctl_parse_v4mask(char *, in_addr_t *, in_addr_t *);
 void		npfctl_parse_cidr(char *, in_addr_t *, in_addr_t *);
 bool		npfctl_parse_port(char *, bool *, in_port_t *, in_port_t *);
