@@ -156,7 +156,6 @@ npfctl_parse_port(char *ostr, bool *range, in_port_t *fport, in_port_t *tport)
 void
 npfctl_parse_cidr(char *str, in_addr_t *addr, in_addr_t *mask)
 {
-
 	if (strcmp(str, "any") == 0) {
 		*addr = 0x0;
 		*mask = 0x0;
