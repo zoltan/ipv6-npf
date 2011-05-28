@@ -40,6 +40,7 @@
 __RCSID("$NetBSD: npf_ncgen.c,v 1.4 2010/12/18 01:07:26 rmind Exp $");
 
 #include <sys/types.h>
+#include <string.h>
 
 #include "npfctl.h"
 
@@ -120,15 +121,18 @@ npfctl_gennc_ether(void **ncptr, int foff, uint16_t ethertype)
  */
 void
 npfctl_gennc_v4cidr(void **ncptr, int foff,
-    in_addr_t netaddr, in_addr_t subnet, bool sd)
+    npf_addr_t netaddr, npf_addr_t subnet, bool sd)
 {
 	uint32_t *nc = *ncptr;
-
+	in_addr_t v4addr, v4mask;
+	
+	memcpy(&v4addr, &netaddr, sizeof(in_addr_t));
+	memcpy(&v4mask, &subnet, sizeof(in_addr_t));
 	/* OP, direction, netaddr/subnet (4 words) */
 	*nc++ = NPF_OPCODE_IP4MASK;
 	*nc++ = (sd ? 0x01 : 0x00);
-	*nc++ = netaddr;
-	*nc++ = subnet;
+	*nc++ = v4addr;
+	*nc++ = v4mask;
 
 	/* If not equal, jump to failure block, continue otherwise (2 words). */
 	*nc++ = NPF_OPCODE_BNE;

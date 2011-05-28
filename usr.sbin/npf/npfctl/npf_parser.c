@@ -631,8 +631,7 @@ npfctl_parse_nat(char *buf)
 	var_t *ifvar, *from_v, *to_v, *raddr_v;
 	var_t *tports = NULL, *rport_v = NULL;
 	char *p, *sptr, *raddr_s, *rport_s;
-	in_addr_t raddr4, _dummy;
-	npf_addr_t raddr;
+	npf_addr_t raddr, _dummy;
 	bool binat, rdr;
 	nl_nat_t *nat;
 	u_int if_idx;
@@ -702,8 +701,7 @@ npfctl_parse_nat(char *buf)
 	PARSE_NEXT_TOKEN();
 	raddr_v = npfctl_parsevalue(p);
 	raddr_s = npfctl_val_single(raddr_v, p);
-	npfctl_parse_cidr(raddr_s, &raddr4, &_dummy);
-	memcpy(&raddr, &raddr4, sizeof(struct in_addr)); /* XXX IPv6 */
+	npfctl_parse_cidr(raddr_s, &raddr, &_dummy);
 
 	if (rdr) {
 		PARSE_NEXT_TOKEN();
@@ -751,12 +749,10 @@ npfctl_parse_nat(char *buf)
 	 */
 	if (binat) {
 		char *taddr_s = npfctl_val_single(from_v, NULL);
-		in_addr_t taddr4;
 		npf_addr_t taddr;
 		nl_nat_t *bn;
 
-		npfctl_parse_cidr(taddr_s, &taddr4, &_dummy);
-		memcpy(&taddr, &taddr4, sizeof(struct in_addr)); /* XXX IPv6 */
+		npfctl_parse_cidr(taddr_s, &taddr, &_dummy);
 		bn = npf_nat_create(NPF_NATIN, 0, if_idx, &taddr, AF_INET, 0);
 		npfctl_rule_ncode(bn, NULL, NULL, -1, -1,
 		    to_v, NULL, raddr_v, NULL);

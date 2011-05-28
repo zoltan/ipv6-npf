@@ -190,8 +190,8 @@ void		npf_hook_unregister(npf_rule_t *, npf_hook_t *);
 typedef struct npf_ioctl_table {
 	int			nct_action;
 	u_int			nct_tid;
-	in_addr_t		nct_addr;
-	in_addr_t		nct_mask;
+	npf_addr_t		nct_addr;
+	npf_addr_t		nct_mask;
 	int			_reserved;
 } npf_ioctl_table_t;
 

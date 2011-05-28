@@ -98,6 +98,7 @@ npf_match_ip4table(npf_cache_t *npc, nbuf_t *nbuf, void *n_ptr,
 {
 	struct ip *ip = &npc->npc_ip.v4;
 	in_addr_t ip4addr;
+	npf_addr_t addr;
 
 	if (!npf_iscached(npc, NPC_IP46)) {
 		if (!npf_fetch_ip(npc, nbuf, n_ptr)) {
@@ -107,8 +108,9 @@ npf_match_ip4table(npf_cache_t *npc, nbuf_t *nbuf, void *n_ptr,
 	}
 	ip4addr = sd ? ip->ip_src.s_addr : ip->ip_dst.s_addr;
 
+	memcpy(&addr, &ip4addr, sizeof(in_addr_t));
 	/* Match address against NPF table. */
-	return npf_table_match_v4addr(tid, ip4addr);
+	return npf_table_match_v4addr(tid, addr);
 }
 
 /*

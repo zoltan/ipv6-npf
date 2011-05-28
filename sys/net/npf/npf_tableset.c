@@ -352,18 +352,22 @@ npf_table_check(npf_tableset_t *tset, u_int tid, int type)
  */
 int
 npf_table_add_v4cidr(npf_tableset_t *tset, u_int tid,
-    in_addr_t addr, in_addr_t mask)
+    npf_addr_t addr, npf_addr_t mask)
 {
 	struct npf_hashl *htbl;
 	npf_tblent_t *e, *it;
 	npf_table_t *t;
 	in_addr_t val;
 	int error = 0;
+	in_addr_t v4addr, v4mask;
+
+	memcpy(&v4addr, &addr, sizeof(in_addr_t));
+	memcpy(&v4mask, &mask, sizeof(in_addr_t));
 
 	/* Allocate and setup entry. */
 	e = pool_cache_get(tblent_cache, PR_WAITOK);
-	e->te_addr = addr;
-	e->te_mask = mask;
+	e->te_addr = v4addr;
+	e->te_mask = v4mask;
 
 	/* Locks the table. */
 	t = npf_table_get(tset, tid);
@@ -374,11 +378,11 @@ npf_table_add_v4cidr(npf_tableset_t *tset, u_int tid,
 	switch (t->t_type) {
 	case NPF_TABLE_HASH:
 		/* Generate hash value from: address & mask. */
-		val = addr & mask;
+		val = v4addr & v4mask;
 		htbl = table_hash_bucket(t, &val, sizeof(in_addr_t));
 		/* Lookup to check for duplicates. */
 		LIST_FOREACH(it, htbl, te_entry.hashq) {
-			if (it->te_addr == addr && it->te_mask == mask)
+			if (it->te_addr == v4addr && it->te_mask == v4mask)
 				break;
 		}
 		/* If no duplicate - insert entry. */
@@ -410,13 +414,17 @@ npf_table_add_v4cidr(npf_tableset_t *tset, u_int tid,
  */
 int
 npf_table_rem_v4cidr(npf_tableset_t *tset, u_int tid,
-    in_addr_t addr, in_addr_t mask)
+    npf_addr_t addr, npf_addr_t mask)
 {
 	struct npf_hashl *htbl;
 	npf_tblent_t *e;
 	npf_table_t *t;
 	in_addr_t val;
 	int error;
+	in_addr_t v4addr, v4mask;
+
+	memcpy(&v4addr, &addr, sizeof(in_addr_t));
+	memcpy(&v4mask, &mask, sizeof(in_addr_t));
 
 	e = NULL;
 
@@ -429,10 +437,10 @@ npf_table_rem_v4cidr(npf_tableset_t *tset, u_int tid,
 	switch (t->t_type) {
 	case NPF_TABLE_HASH:
 		/* Generate hash value from: (address & mask). */
-		val = addr & mask;
+		val = v4addr & v4mask;
 		htbl = table_hash_bucket(t, &val, sizeof(in_addr_t));
 		LIST_FOREACH(e, htbl, te_entry.hashq) {
-			if (e->te_addr == addr && e->te_mask == mask)
+			if (e->te_addr == v4addr && e->te_mask == v4mask)
 				break;
 		}
 		if (__predict_true(e != NULL)) {
@@ -443,7 +451,7 @@ npf_table_rem_v4cidr(npf_tableset_t *tset, u_int tid,
 		break;
 	case NPF_TABLE_RBTREE:
 		/* Key: (address & mask). */
-		val = addr & mask;
+		val = v4addr & v4mask;
 		e = rb_tree_find_node(&t->t_rbtree, &val);
 		if (__predict_true(e != NULL)) {
 			rb_tree_remove_node(&t->t_rbtree, e);
@@ -468,11 +476,12 @@ npf_table_rem_v4cidr(npf_tableset_t *tset, u_int tid,
  * match the contents with specified IPv4 address.
  */
 int
-npf_table_match_v4addr(u_int tid, in_addr_t ip4addr)
+npf_table_match_v4addr(u_int tid, npf_addr_t addr)
 {
 	struct npf_hashl *htbl;
 	npf_tblent_t *e = NULL;
 	npf_table_t *t;
+	in_addr_t ip4addr;
 
 	/* Locks the table. */
 	t = npf_table_get(NULL, tid);

@@ -120,12 +120,12 @@ npf_mk_tables(npf_tableset_t *tblset, prop_array_t tables)
 		}
 		eit = prop_array_iterator(entries);
 		while ((ent = prop_object_iterator_next(eit)) != NULL) {
-			in_addr_t addr, mask;	/* XXX: IPv6 */
+			npf_addr_t *addr, *mask;
 
 			/* Get address and mask.  Add a table entry. */
-			prop_dictionary_get_uint32(ent, "addr", &addr);
-			prop_dictionary_get_uint32(ent, "mask", &mask);
-			error = npf_table_add_v4cidr(tblset, tid, addr, mask);
+			addr = (npf_addr_t *)prop_data_data(prop_dictionary_get(ent, "addr"));
+			mask = (npf_addr_t *)prop_data_data(prop_dictionary_get(ent, "mask"));
+			error = npf_table_add_v4cidr(tblset, tid, *addr, *mask);
 			if (error)
 				break;
 		}

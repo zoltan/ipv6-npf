@@ -429,18 +429,23 @@ npf_table_create(int id, int type)
 }
 
 int
-npf_table_add_entry(nl_table_t *tl, in_addr_t addr, in_addr_t mask)
+npf_table_add_entry(nl_table_t *tl, npf_addr_t *addr, npf_addr_t *mask)
 {
 	prop_dictionary_t tldict = tl->ntl_dict, entdict;
 	prop_array_t tblents;
+	prop_data_t addrdata, maskdata;
 
 	/* Create the table entry. */
 	entdict = prop_dictionary_create();
 	if (entdict) {
 		return ENOMEM;
 	}
-	prop_dictionary_set_uint32(entdict, "addr", addr);
-	prop_dictionary_set_uint32(entdict, "mask", mask);
+	addrdata = prop_data_create_data(addr, sizeof(npf_addr_t));
+	maskdata = prop_data_create_data(mask, sizeof(npf_addr_t));
+	prop_dictionary_set(entdict, "addr", addrdata);
+	prop_dictionary_set(entdict, "mask", maskdata);
+	prop_object_release(addrdata);
+	prop_object_release(maskdata);
 
 	/* Insert the entry. */
 	tblents = prop_dictionary_get(tldict, "entries");
