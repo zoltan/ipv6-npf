@@ -120,12 +120,12 @@ npf_mk_tables(npf_tableset_t *tblset, prop_array_t tables)
 		}
 		eit = prop_array_iterator(entries);
 		while ((ent = prop_object_iterator_next(eit)) != NULL) {
-			npf_addr_t *addr, *mask;
+			const npf_addr_t *addr, *mask;
 
 			/* Get address and mask.  Add a table entry. */
-			addr = (npf_addr_t *)prop_data_data(prop_dictionary_get(ent, "addr"));
-			mask = (npf_addr_t *)prop_data_data(prop_dictionary_get(ent, "mask"));
-			error = npf_table_add_v4cidr(tblset, tid, *addr, *mask);
+			addr = (const npf_addr_t *)prop_data_data_nocopy(prop_dictionary_get(ent, "addr"));
+			mask = (const npf_addr_t *)prop_data_data_nocopy(prop_dictionary_get(ent, "mask"));
+			error = npf_table_add_v4cidr(tblset, tid, addr, mask);
 			if (error)
 				break;
 		}
@@ -601,15 +601,15 @@ npfctl_table(void *data)
 	switch (nct->nct_action) {
 	case NPF_IOCTL_TBLENT_ADD:
 		error = npf_table_add_v4cidr(NULL, nct->nct_tid,
-		    nct->nct_addr, nct->nct_mask);
+		    &nct->nct_addr, &nct->nct_mask);
 		break;
 	case NPF_IOCTL_TBLENT_REM:
 		error = npf_table_rem_v4cidr(NULL, nct->nct_tid,
-		    nct->nct_addr, nct->nct_mask);
+		    &nct->nct_addr, &nct->nct_mask);
 		break;
 	default:
 		/* XXX */
-		error = npf_table_match_v4addr(nct->nct_tid, nct->nct_addr);
+		error = npf_table_match_v4addr(nct->nct_tid, &nct->nct_addr);
 		if (error) {
 			error = EINVAL;
 		}

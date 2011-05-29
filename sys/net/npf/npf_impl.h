@@ -198,10 +198,10 @@ npf_table_t *	npf_table_get(npf_tableset_t *, u_int);
 void		npf_table_put(npf_table_t *);
 int		npf_table_check(npf_tableset_t *, u_int, int);
 int		npf_table_add_v4cidr(npf_tableset_t *, u_int,
-		    npf_addr_t, npf_addr_t);
+		    const npf_addr_t *, const npf_addr_t *);
 int		npf_table_rem_v4cidr(npf_tableset_t *, u_int,
-		    npf_addr_t, npf_addr_t);
-int		npf_table_match_v4addr(u_int, npf_addr_t);
+		    const npf_addr_t *, const npf_addr_t *);
+int		npf_table_match_v4addr(u_int, const npf_addr_t *);
 
 /* Ruleset interface. */
 npf_ruleset_t *	npf_ruleset_create(void);
