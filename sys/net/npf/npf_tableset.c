@@ -483,6 +483,8 @@ npf_table_match_v4addr(u_int tid, npf_addr_t addr)
 	npf_table_t *t;
 	in_addr_t ip4addr;
 
+	memcpy(&ip4addr, &addr, sizeof(in_addr_t));
+
 	/* Locks the table. */
 	t = npf_table_get(NULL, tid);
 	if (__predict_false(t == NULL)) {
