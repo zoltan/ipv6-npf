@@ -280,7 +280,7 @@ npfctl_rulenc_v4cidr(void **nc, int nblocks[], var_t *dat, bool sd)
 
 		nblocks[1]--;
 		foff = npfctl_failure_offset(nblocks);
-		npfctl_gennc_v4cidr(nc, foff, addr, mask, sd);
+		npfctl_gennc_v4cidr(nc, foff, &addr, &mask, sd);
 	}
 }
 

@@ -124,14 +124,15 @@ npfctl_gennc_v4cidr(void **ncptr, int foff,
     const npf_addr_t *netaddr, const npf_addr_t *subnet, bool sd)
 {
 	uint32_t *nc = *ncptr;
-	const in_addr_t *v4addr = (const in_addr_t *)netaddr;
-	const in_addr_t *v4mask = (const in_addr_t *)subnet;
-	
+	in_addr_t v4addr, v4mask;
+
+	memcpy(&v4addr, netaddr, sizeof(in_addr_t));
+	memcpy(&v4mask, subnet, sizeof(in_addr_t));
 	/* OP, direction, netaddr/subnet (4 words) */
 	*nc++ = NPF_OPCODE_IP4MASK;
 	*nc++ = (sd ? 0x01 : 0x00);
-	*nc++ = *v4addr;
-	*nc++ = *v4mask;
+	*nc++ = v4addr;
+	*nc++ = v4mask;
 
 	/* If not equal, jump to failure block, continue otherwise (2 words). */
 	*nc++ = NPF_OPCODE_BNE;
