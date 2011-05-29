@@ -39,6 +39,8 @@
 #define	_NPF_PRIVATE
 #include <npf.h>
 
+#define DEBUG
+
 #ifdef DEBUG
 #define	DPRINTF(x)	printf x
 #else

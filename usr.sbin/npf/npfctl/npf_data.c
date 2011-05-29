@@ -160,10 +160,12 @@ void
 npfctl_parse_cidr(char *str, npf_addr_t *addr, npf_addr_t *mask)
 {
 	in_addr_t v4addr, v4mask;
+	int copy = 0;
 
 	if (strcmp(str, "any") == 0) {
 		v4addr = 0x0;
 		v4mask = 0x0;
+		copy = 1;
 	} else if (isalpha((unsigned char)*str)) {
 		struct ifaddrs *ifa;
 		struct sockaddr_in *sin;
@@ -176,12 +178,15 @@ npfctl_parse_cidr(char *str, npf_addr_t *addr, npf_addr_t *mask)
 		sin = (struct sockaddr_in *)ifa->ifa_addr;
 		v4addr = sin->sin_addr.s_addr;
 		v4mask = 0xffffffff;
+		copy = 1;
 	} else if (!npfctl_parse_v4mask(str, addr, mask)) {
 		errx(EXIT_FAILURE, "invalid CIDR '%s'\n", str);
 	}
 
-	memcpy(addr, &v4addr, sizeof(in_addr_t));
-	memcpy(mask, &v4mask, sizeof(in_addr_t));
+	if(copy) {
+	    memcpy(addr, &v4addr, sizeof(in_addr_t));
+	    memcpy(mask, &v4mask, sizeof(in_addr_t));
+	}
 }
 
 static bool
