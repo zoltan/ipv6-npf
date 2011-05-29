@@ -137,7 +137,6 @@ npfctl_create_mask(sa_family_t family, u_int length, npf_addr_t *mask)
 {
 	uint32_t part;
 
-	printf("addr of mask: %p\n", mask);
 	memset(mask, 0, sizeof(npf_addr_t));
 	if (family == AF_INET) {
 		part = htonl(0xffffffff << (32 - length));
@@ -193,8 +192,6 @@ npfctl_parse_cidr(char *str, npf_addr_t *addr, npf_addr_t *mask)
 		ret = inet_pton(res->ai_family, str, addr);
 		npfctl_create_mask(res->ai_family, atoi(p), mask);
 		freeaddrinfo(res);
-		printf("value @ %p: ", addr);
-		printf("%x\n", *((in_addr_t*)(addr)));
 		return res->ai_family;
 	}
 
@@ -298,10 +295,7 @@ npfctl_rulenc_cidr(void **nc, int nblocks[], var_t *dat, bool sd)
 	for (el = dat->v_elements; el != NULL; el = el->e_next) {
 		npf_addr_t addr, mask;
 
-		printf("calling cidr\n");
 		npfctl_parse_cidr(el->e_data, &addr, &mask);
-		printf("value @ %p: ", &addr);
-		printf("%x\n", *((in_addr_t*)(&addr)));
 		nblocks[1]--;
 		foff = npfctl_failure_offset(nblocks);
 		npfctl_gennc_v4cidr(nc, foff, &addr, &mask, sd);
