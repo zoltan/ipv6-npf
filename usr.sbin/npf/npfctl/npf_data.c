@@ -153,6 +153,29 @@ npfctl_create_mask(sa_family_t family, u_int length, npf_addr_t *mask)
 }
 
 sa_family_t
+npfctl_get_addrfamily(const char *ostr)
+{
+	struct addrinfo hint, *res = NULL;
+	int ret; 
+	char *str = xstrdup(ostr);
+	char *p = strchr(str, '/');
+	sa_family_t family;
+
+	if (p)
+	    *p = '\0';
+	memset(&hint, '\0', sizeof(hint));
+	hint.ai_family = PF_UNSPEC;
+	hint.ai_flags = AI_NUMERICHOST;
+	ret = getaddrinfo(str, NULL, &hint, &res);
+	if (ret)
+		return AF_UNSPEC;
+	family = res->ai_family;
+	freeaddrinfo(res);
+
+	return family;
+}
+
+sa_family_t
 npfctl_parse_cidr(char *str, npf_addr_t *addr, npf_addr_t *mask)
 {
 	in_addr_t v4addr, v4mask;
@@ -176,23 +199,26 @@ npfctl_parse_cidr(char *str, npf_addr_t *addr, npf_addr_t *mask)
 		v4mask = 0xffffffff;
 		copy = true;
 	} else {
-		struct addrinfo hint, *res = NULL;
-		int ret; 
+		u_int masklength;
+		sa_family_t addrfamily = npfctl_get_addrfamily(str);
 
-		char *p = strchr(str, '/');
-		*p++ = '\0';
-		memset(&hint, '\0', sizeof hint);
-		hint.ai_family = PF_UNSPEC;
-		hint.ai_flags = AI_NUMERICHOST;
-		ret = getaddrinfo(str, NULL, &hint, &res);
-		if (ret) {
+		if (addrfamily == AF_UNSPEC) {
 			errx(EXIT_FAILURE, "'%s' is an invalid address", str);
 			return AF_UNSPEC;
 		}
-		ret = inet_pton(res->ai_family, str, addr);
-		npfctl_create_mask(res->ai_family, atoi(p), mask);
-		freeaddrinfo(res);
-		return res->ai_family;
+		char *p = strchr(str, '\0');
+		if (p != NULL) {
+			*p++ = '\0';
+			masklength = atoi(p);
+		} else {
+			if (addrfamily == AF_INET)
+				masklength = 32;
+			else
+				masklength = 128;
+		}
+		inet_pton(addrfamily, str, addr);
+		npfctl_create_mask(addrfamily, masklength, mask);
+		return addrfamily;
 	}
 
 	if(copy) {
@@ -295,10 +321,16 @@ npfctl_rulenc_cidr(void **nc, int nblocks[], var_t *dat, bool sd)
 	for (el = dat->v_elements; el != NULL; el = el->e_next) {
 		npf_addr_t addr, mask;
 
-		npfctl_parse_cidr(el->e_data, &addr, &mask);
-		nblocks[1]--;
+		sa_family_t family = npfctl_parse_cidr(el->e_data, &addr, &mask);
+		if (family == AF_INET)
+		    nblocks[1]--;
+		else if (family == AF_INET6)
+		    nblocks[3]--;
 		foff = npfctl_failure_offset(nblocks);
-		npfctl_gennc_v4cidr(nc, foff, &addr, &mask, sd);
+		if (family == AF_INET) 
+			npfctl_gennc_v4cidr(nc, foff, &addr, &mask, sd);
+		else if (family == AF_INET6)
+			npfctl_gennc_v6cidr(nc, foff, &addr, &mask, sd);
 	}
 }
 
@@ -343,9 +375,9 @@ npfctl_rulenc_block(void **nc, int nblocks[], var_t *cidr, var_t *ports,
 
 void
 npfctl_rule_ncode(nl_rule_t *rl, char *proto, char *tcpfl, int icmp_type,
-    int icmp_code, var_t *from, var_t *fports, var_t *to, var_t *tports)
+    int icmp_code, var_t *from, sa_family_t addrfamily, var_t *fports, var_t *to, var_t *tports)
 {
-	int nblocks[3] = { 0, 0, 0 };
+	int nblocks[4] = { 0, 0, 0, 0 };
 	bool icmp, tcpudp, both;
 	void *ncptr, *nc;
 	size_t sz, foff;
@@ -393,22 +425,30 @@ skip_proto:
 	if (from && from->v_count) {
 		if (from->v_type == VAR_TABLE)
 			nblocks[0] += 1;
-		else
-			nblocks[1] += from->v_count;
+		else {
+			if (addrfamily == AF_INET)
+				nblocks[1] += from->v_count;
+			else
+				nblocks[3] += from->v_count;
+		}
 		if (fports && fports->v_count)
 			nblocks[0] += fports->v_count * (both ? 2 : 1);
 	}
 	if (to && to->v_count) {
 		if (to->v_type == VAR_TABLE)
 			nblocks[0] += 1;
-		else
-			nblocks[1] += to->v_count;
+		else {
+			if (addrfamily == AF_INET)
+				nblocks[1] += to->v_count;
+			else
+				nblocks[3] += to->v_count;
+		}
 		if (tports && tports->v_count)
 			nblocks[0] += tports->v_count * (both ? 2 : 1);
 	}
 
 	/* Any n-code to generate? */
-	if (!icmp && (nblocks[0] + nblocks[1] + nblocks[2]) == 0) {
+	if (!icmp && (nblocks[0] + nblocks[1] + nblocks[2] + nblocks[3]) == 0) {
 		/* Done, if none. */
 		return;
 	}

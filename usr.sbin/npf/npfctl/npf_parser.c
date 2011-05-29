@@ -269,6 +269,7 @@ npfctl_parserule(char *buf, nl_rule_t *parent)
 	u_int if_idx = 0;
 	int ret, attr = 0;
 	nl_rule_t *rl;
+	sa_family_t addrfamily = AF_UNSPEC;
 
 	DPRINTF(("rule\t|%s|\n", buf));
 
@@ -324,10 +325,11 @@ npfctl_parserule(char *buf, nl_rule_t *parent)
 		PARSE_NEXT_TOKEN();
 	}
 
-	/* inet, inet6 (TODO) */
 	if (strcmp(p, "inet") == 0) {
+		addrfamily = AF_INET;
 		PARSE_NEXT_TOKEN();
 	} else if (strcmp(p, "inet6") == 0) {
+		addrfamily = AF_INET6;
 		PARSE_NEXT_TOKEN();
 	}
 
@@ -361,6 +363,8 @@ npfctl_parserule(char *buf, nl_rule_t *parent)
 	/* from <addr> port <port | range> */
 	if (strcmp(p, "from") == 0) {
 		PARSE_NEXT_TOKEN();
+		if (addrfamily == AF_UNSPEC)
+			addrfamily = npfctl_get_addrfamily(p);
 		from_v = npfctl_parsevalue(p);
 
 		PARSE_NEXT_TOKEN_NOCHECK();
@@ -375,6 +379,8 @@ npfctl_parserule(char *buf, nl_rule_t *parent)
 	/* to <addr> port <port | range> */
 	if (p && strcmp(p, "to") == 0) {
 		PARSE_NEXT_TOKEN();
+		if (addrfamily == AF_UNSPEC)
+			addrfamily = npfctl_get_addrfamily(p);
 		to_v = npfctl_parsevalue(p);
 
 		PARSE_NEXT_TOKEN_NOCHECK();
@@ -454,7 +460,7 @@ last:
 	 */
 	rl = npf_rule_create(NULL, attr, if_idx);
 	npfctl_rule_ncode(rl, proto, tcp_flags, icmp_type, icmp_code,
-	    from_v, fports, to_v, tports);
+	    from_v, addrfamily, fports, to_v, tports);
 	if (rproc && npf_rule_setproc(npf_conf, rl, rproc) != 0) {
 		errx(EXIT_FAILURE, "procedure '%s' is not defined", rproc);
 	}
@@ -737,7 +743,7 @@ npfctl_parse_nat(char *buf)
 		nat = npf_nat_create(NPF_NATIN, NPF_NAT_PORTS,
 		    if_idx, &raddr, AF_INET, rport);
 	}
-	npfctl_rule_ncode(nat, NULL, NULL, -1, -1, from_v, NULL, to_v, tports);
+	npfctl_rule_ncode(nat, NULL, NULL, -1, -1, from_v, AF_INET, NULL, to_v, tports);
 	(void)npf_nat_insert(npf_conf, nat, NPF_PRI_NEXT);
 
 	/*
@@ -755,7 +761,7 @@ npfctl_parse_nat(char *buf)
 		npfctl_parse_cidr(taddr_s, &taddr, &_dummy);
 		bn = npf_nat_create(NPF_NATIN, 0, if_idx, &taddr, AF_INET, 0);
 		npfctl_rule_ncode(bn, NULL, NULL, -1, -1,
-		    to_v, NULL, raddr_v, NULL);
+		    to_v, AF_INET, NULL, raddr_v, NULL);
 		(void)npf_nat_insert(npf_conf, bn, NPF_PRI_NEXT);
 	}
 	return 0;

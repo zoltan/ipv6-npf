@@ -55,11 +55,13 @@ npfctl_calc_ncsize(int nblocks[])
 	 * - 5 words each by npfctl_gennc_ports/tbl(), stored in nblocks[0].
 	 * - 6 words each by npfctl_gennc_v4cidr(), stored in nblocks[1].
 	 * - 4 words by npfctl_gennc_{icmp,tcpfl}(), stored in nblocks[2].
+	 * - 12 words each by npfctl_gennc_v6cidr(), stored in nblocks[3].
 	 * - 4 words by npfctl_gennc_complete(), single last fragment.
 	 */
 	return nblocks[0] * 5 * sizeof(uint32_t) +
 	    nblocks[1] * 6 * sizeof(uint32_t) +
 	    nblocks[2] * 4 * sizeof(uint32_t) +
+	    nblocks[3] * 12 * sizeof(uint32_t) +
 	    4 * sizeof(uint32_t);
 }
 
@@ -69,7 +71,7 @@ npfctl_calc_ncsize(int nblocks[])
 size_t
 npfctl_failure_offset(int nblocks[])
 {
-	size_t tblport_blocks, v4cidr_blocks, icmp_tcpfl;
+	size_t tblport_blocks, v4cidr_blocks, v6cidr_blocks, icmp_tcpfl;
 	/*
 	 * Take into account all blocks (plus 2 words for comparison each),
 	 * and additional 4 words to skip the last comparison and success path.
@@ -77,7 +79,8 @@ npfctl_failure_offset(int nblocks[])
 	tblport_blocks = (3 + 2) * nblocks[0];
 	v4cidr_blocks = (4 + 2) * nblocks[1];
 	icmp_tcpfl = (2 + 2) * nblocks[2];
-	return tblport_blocks + v4cidr_blocks + icmp_tcpfl + 4;
+	v6cidr_blocks = (10 + 2) * nblocks[3];
+	return tblport_blocks + v4cidr_blocks + v6cidr_blocks + icmp_tcpfl + 4;
 }
 
 #if 0
@@ -115,6 +118,35 @@ npfctl_gennc_ether(void **ncptr, int foff, uint16_t ethertype)
 	*ncptr = (void *)nc;
 }
 #endif
+
+void
+npfctl_gennc_v6cidr(void **ncptr, int foff,
+    const npf_addr_t *netaddr, const npf_addr_t *subnet, bool sd)
+{
+	uint32_t *nc = *ncptr;
+	const uint32_t *addr = (const uint32_t *)netaddr;
+	const uint32_t *mask = (const uint32_t *)subnet;
+
+	/* OP, direction, netaddr/subnet (10 words) */
+	*nc++ = NPF_OPCODE_IP6MASK;
+	*nc++ = (sd ? 0x01 : 0x00);
+	*nc++ = addr[0];
+	*nc++ = addr[1];
+	*nc++ = addr[2];
+	*nc++ = addr[3];
+	*nc++ = mask[0];
+	*nc++ = mask[1];
+	*nc++ = mask[2];
+	*nc++ = mask[3];
+
+	/* If not equal, jump to failure block, continue otherwise (2 words). */
+	*nc++ = NPF_OPCODE_BNE;
+	*nc++ = foff;
+
+	/* + 6 words. */
+	*ncptr = (void *)nc;
+}
+
 
 /*
  * npfctl_gennc_v4cidr: fragment to match IPv4 CIDR.

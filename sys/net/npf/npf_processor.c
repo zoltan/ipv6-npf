@@ -287,6 +287,8 @@ cisc_like:
 		i_ptr = nc_fetch_double(i_ptr, &n, &i);
 		cmpval = npf_match_ip4mask(npc, nbuf, n_ptr, d, n, i);
 		break;
+	case NPF_OPCODE_IP6MASK:
+		break;
 	case NPF_OPCODE_IP4TABLE:
 		/* Source/destination, NPF table ID. */
 		i_ptr = nc_fetch_double(i_ptr, &n, &i);
