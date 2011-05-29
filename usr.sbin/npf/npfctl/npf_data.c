@@ -206,7 +206,7 @@ npfctl_parse_cidr(char *str, npf_addr_t *addr, npf_addr_t *mask)
 			errx(EXIT_FAILURE, "'%s' is an invalid address", str);
 			return AF_UNSPEC;
 		}
-		char *p = strchr(str, '\0');
+		char *p = strchr(str, '/');
 		if (p != NULL) {
 			*p++ = '\0';
 			masklength = atoi(p);
