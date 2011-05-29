@@ -252,7 +252,7 @@ npfctl(int action, int argc, char **argv)
 			tbl.nct_action = 0;
 			arg = argv[3];
 		}
-		if (!npfctl_parse_v4mask(arg,
+		if (!npfctl_parse_cidr(arg,
 		    &tbl.nct_addr, &tbl.nct_mask)) {
 			errx(EXIT_FAILURE, "invalid CIDR '%s'", arg);
 		}

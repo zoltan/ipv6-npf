@@ -105,30 +105,6 @@ npfctl_getif(char *ifname, unsigned int *if_idx, bool reqaddr, sa_family_t addrt
 }
 
 bool
-npfctl_parse_v4mask(char *ostr, npf_addr_t *addr, npf_addr_t *mask)
-{
-	char *str = xstrdup(ostr);
-	char *p = strchr(str, '/');
-	u_int bits;
-	bool ret;
-	in_addr_t v4mask;
-
-	/* In network byte order. */
-	if (p) {
-		*p++ = '\0';
-		bits = (u_int)atoi(p);
-		v4mask = bits ? htonl(0xffffffff << (32 - bits)) : 0;
-	} else {
-		v4mask = 0xffffffff;
-	}
-	ret = inet_aton(str, (struct in_addr *)addr) != 0;
-	free(str);
-	
-	memcpy(mask, &v4mask, sizeof(in_addr_t));
-	return ret;
-}
-
-bool
 npfctl_parse_port(char *ostr, bool *range, in_port_t *fport, in_port_t *tport)
 {
 	char *str = xstrdup(ostr), *sep;
@@ -157,6 +133,27 @@ npfctl_parse_port(char *ostr, bool *range, in_port_t *fport, in_port_t *tport)
 }
 
 void
+npfctl_create_mask(sa_family_t family, u_int length, npf_addr_t *mask)
+{
+	uint32_t part;
+
+	printf("addr of mask: %p\n", mask);
+	memset(mask, 0, sizeof(npf_addr_t));
+	if (family == AF_INET) {
+		part = htonl(0xffffffff << (32 - length));
+		memset(mask, part, 8);
+	} else if (family == AF_INET6) {
+		while(length > 32) {
+			memset(mask, 0xffffffff, 32);
+			mask += 32;
+			length -= 32;
+		}
+		part = htonl(0xffffffff << (32 - length));
+		memset(mask, part, 32);
+	}
+}
+
+sa_family_t
 npfctl_parse_cidr(char *str, npf_addr_t *addr, npf_addr_t *mask)
 {
 	in_addr_t v4addr, v4mask;
@@ -167,10 +164,10 @@ npfctl_parse_cidr(char *str, npf_addr_t *addr, npf_addr_t *mask)
 		v4mask = 0x0;
 		copy = true;
 	} else if (isalpha((unsigned char)*str)) {
+		/* TODO: handle multiple addresses per interface */
 		struct ifaddrs *ifa;
 		struct sockaddr_in *sin;
 		u_int idx;
-
 		if ((ifa = npfctl_getif(str, &idx, true, AF_INET)) == NULL) {
 			errx(EXIT_FAILURE, "invalid interface '%s'", str);
 		}
@@ -179,14 +176,34 @@ npfctl_parse_cidr(char *str, npf_addr_t *addr, npf_addr_t *mask)
 		v4addr = sin->sin_addr.s_addr;
 		v4mask = 0xffffffff;
 		copy = true;
-	} else if (!npfctl_parse_v4mask(str, addr, mask)) {
-		errx(EXIT_FAILURE, "invalid CIDR '%s'\n", str);
+	} else {
+		struct addrinfo hint, *res = NULL;
+		int ret; 
+
+		char *p = strchr(str, '/');
+		*p++ = '\0';
+		memset(&hint, '\0', sizeof hint);
+		hint.ai_family = PF_UNSPEC;
+		hint.ai_flags = AI_NUMERICHOST;
+		ret = getaddrinfo(str, NULL, &hint, &res);
+		if (ret) {
+			errx(EXIT_FAILURE, "'%s' is an invalid address", str);
+			return AF_UNSPEC;
+		}
+		ret = inet_pton(res->ai_family, str, addr);
+		npfctl_create_mask(res->ai_family, atoi(p), mask);
+		freeaddrinfo(res);
+		printf("value @ %p: ", addr);
+		printf("%x\n", *((in_addr_t*)(addr)));
+		return res->ai_family;
 	}
 
 	if(copy) {
 	    memcpy(addr, &v4addr, sizeof(in_addr_t));
 	    memcpy(mask, &v4mask, sizeof(in_addr_t));
 	}
+	
+	return AF_INET;
 }
 
 static bool
@@ -244,7 +261,7 @@ npfctl_fill_table(nl_table_t *tl, char *fname)
 			continue;
 
 		/* IPv4 CIDR: a.b.c.d/mask */
-		if (!npfctl_parse_v4mask(buf, &addr, &mask)) {
+		if (!npfctl_parse_cidr(buf, &addr, &mask)) {
 			errx(EXIT_FAILURE, "invalid table entry at line %d", l);
 		}
 
@@ -262,7 +279,7 @@ npfctl_fill_table(nl_table_t *tl, char *fname)
  */
 
 static void
-npfctl_rulenc_v4cidr(void **nc, int nblocks[], var_t *dat, bool sd)
+npfctl_rulenc_cidr(void **nc, int nblocks[], var_t *dat, bool sd)
 {
 	element_t *el = dat->v_elements;
 	int foff;
@@ -277,12 +294,14 @@ npfctl_rulenc_v4cidr(void **nc, int nblocks[], var_t *dat, bool sd)
 		return;
 	}
 
-	/* Generate v4 CIDR matching blocks. */
+	/* Generate v4/v6 CIDR matching blocks. */
 	for (el = dat->v_elements; el != NULL; el = el->e_next) {
 		npf_addr_t addr, mask;
 
+		printf("calling cidr\n");
 		npfctl_parse_cidr(el->e_data, &addr, &mask);
-
+		printf("value @ %p: ", &addr);
+		printf("%x\n", *((in_addr_t*)(&addr)));
 		nblocks[1]--;
 		foff = npfctl_failure_offset(nblocks);
 		npfctl_gennc_v4cidr(nc, foff, &addr, &mask, sd);
@@ -317,7 +336,7 @@ npfctl_rulenc_block(void **nc, int nblocks[], var_t *cidr, var_t *ports,
     bool both, bool tcpudp, bool sd)
 {
 
-	npfctl_rulenc_v4cidr(nc, nblocks, cidr, sd);
+	npfctl_rulenc_cidr(nc, nblocks, cidr, sd);
 	if (ports == NULL) {
 		return;
 	}
@@ -409,7 +428,7 @@ skip_proto:
 	nc = ncptr;
 
 	/*
-	 * Generate v4 CIDR matching blocks and TCP/UDP port matching.
+	 * Generate v4/v6 CIDR matching blocks and TCP/UDP port matching.
 	 */
 	if (from) {
 		npfctl_rulenc_block(&nc, nblocks, from, fports,
