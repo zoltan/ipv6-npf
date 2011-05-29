@@ -174,7 +174,7 @@ npfctl_parse_cidr(char *str, npf_addr_t *addr, npf_addr_t *mask)
 		}
 		/* Interface address. */
 		sin = (struct sockaddr_in *)ifa->ifa_addr;
-		memcpy(&v4addr, &sin->sin_addr.s_addr, sizeof(struct in_addr));
+		v4addr = sin->sin_addr.s_addr;
 		v4mask = 0xffffffff;
 	} else if (!npfctl_parse_v4mask(str, addr, mask)) {
 		errx(EXIT_FAILURE, "invalid CIDR '%s'\n", str);
