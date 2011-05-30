@@ -183,8 +183,8 @@ npfctl_parse_cidr(char *str, sa_family_t addrfamily, npf_addr_t *addr, npf_addr_
 {
 
 	if (strcmp(str, "any") == 0) {
-		memset(addr, 0, 16);
-		memset(mask, 0, 16);
+		memset(addr, 0, sizeof(npf_addr_t));
+		memset(mask, 0, sizeof)npf_addr_t));
 	} else if (isalpha((unsigned char)*str)) {
 		/* TODO: handle multiple addresses per interface */
 		struct ifaddrs *ifa;
