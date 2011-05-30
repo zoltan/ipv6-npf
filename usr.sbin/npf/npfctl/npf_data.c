@@ -138,23 +138,21 @@ npfctl_create_mask(sa_family_t family, u_int length, npf_addr_t *omask)
 	uint32_t part;
 	uint32_t *mask = (uint32_t*)omask;
 
-	memset(omask, 0, 16);
-	printf("X mask before: %x %x %x %x\n", *((unsigned int *)omask), *((unsigned int *)omask+1), *((unsigned int *)omask+2), *((unsigned int *)omask+3));
+	memset(omask, 0, sizeof(npf_addr_t));
 	if (family == AF_INET) {
 		part = htonl(0xffffffff << (32 - length));
-		memset(mask, part, 4);
+		memcpy(mask, &part, 4);
 	} else if (family == AF_INET6) {
 		printf("ipv6 mask, length: %d\n", length);
 		while (length > 32) {
 			part = htonl(0xffffffff);
-			memset(mask, part, 4);
+			memcpy(mask, &part, 4);
 			mask += 1;
 			length -= 32;
 		}
 		part = htonl(0xffffffff << (32 - length));
-		memset(mask, part, 4);
+		memcpy(mask, &part, 4);
 	}
-	printf("created mask: %x %x %x %x\n", *((unsigned int *)omask), *((unsigned int *)omask+1), *((unsigned int *)omask+2), *((unsigned int *)omask+3));
 }
 
 sa_family_t
