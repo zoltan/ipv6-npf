@@ -143,7 +143,6 @@ npfctl_create_mask(sa_family_t family, u_int length, npf_addr_t *omask)
 		part = htonl(0xffffffff << (32 - length));
 		memcpy(mask, &part, 4);
 	} else if (family == AF_INET6) {
-		printf("ipv6 mask, length: %d\n", length);
 		while (length > 32) {
 			part = htonl(0xffffffff);
 			memcpy(mask, &part, 4);
@@ -184,7 +183,7 @@ npfctl_parse_cidr(char *str, sa_family_t addrfamily, npf_addr_t *addr, npf_addr_
 
 	if (strcmp(str, "any") == 0) {
 		memset(addr, 0, sizeof(npf_addr_t));
-		memset(mask, 0, sizeof)npf_addr_t));
+		memset(mask, 0, sizeof(npf_addr_t));
 	} else if (isalpha((unsigned char)*str)) {
 		/* TODO: handle multiple addresses per interface */
 		struct ifaddrs *ifa;
@@ -213,11 +212,9 @@ npfctl_parse_cidr(char *str, sa_family_t addrfamily, npf_addr_t *addr, npf_addr_
 		if (ret != 1) {
 			printf("TODO: error");
 		}
-		printf("parse_cidr, addr: %x %x %x %x\n", *((unsigned int *)addr), *((unsigned int *)addr+1), *((unsigned int *)addr+2), *((unsigned int *)addr+3));
 		npfctl_create_mask(addrfamily, masklength, mask);
 	}
 
-	printf("parse_cidr(%s) addr: %x %x %x %x\n", str, *((unsigned int *)addr), *((unsigned int *)addr+1), *((unsigned int *)addr+2), *((unsigned int *)addr+3));
 	return addrfamily;
 }
 

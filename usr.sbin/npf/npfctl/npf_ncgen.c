@@ -130,10 +130,6 @@ npfctl_gennc_v6cidr(void **ncptr, int foff,
 	/* OP, direction, netaddr/subnet (10 words) */
 	*nc++ = NPF_OPCODE_IP6MASK;
 	*nc++ = (sd ? 0x01 : 0x00);
-	
-	printf("addr: %x %x %x %x\n", addr[0], addr[1], addr[2], addr[3]);
-	printf("mask: %x %x %x %x\n", mask[0], mask[1], mask[2], mask[3]);
-	
 	*nc++ = addr[0];
 	*nc++ = addr[1];
 	*nc++ = addr[2];
