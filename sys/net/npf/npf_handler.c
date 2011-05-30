@@ -57,6 +57,7 @@ __KERNEL_RCSID(0, "$NetBSD: npf_handler.c,v 1.7 2011/02/02 02:20:25 rmind Exp $"
  */
 static struct pfil_head *	npf_ph_if = NULL;
 static struct pfil_head *	npf_ph_inet = NULL;
+static struct pfil_head *	npf_ph_inet6 = NULL;
 
 static bool			default_pass = true;
 
@@ -230,6 +231,7 @@ npf_register_pfil(void)
 	/* Capture point of any activity in interfaces and IP layer. */
 	npf_ph_if = pfil_head_get(PFIL_TYPE_IFNET, 0);
 	npf_ph_inet = pfil_head_get(PFIL_TYPE_AF, AF_INET);
+	npf_ph_inet6 = pfil_head_get(PFIL_TYPE_AF, AF_INET6);
 	if (npf_ph_if == NULL || npf_ph_inet == NULL) {
 		npf_ph_if = NULL;
 		error = ENOENT;
@@ -245,7 +247,10 @@ npf_register_pfil(void)
 	error = pfil_add_hook(npf_packet_handler, NULL,
 	    PFIL_WAITOK | PFIL_ALL, npf_ph_inet);
 	KASSERT(error == 0);
-
+	
+	error = pfil_add_hook(npf_packet_handler, NULL,
+	    PFIL_WAITOK | PFIL_ALL, npf_ph_inet6);
+	KASSERT(error == 0);
 fail:
 	KERNEL_UNLOCK_ONE(NULL);
 	mutex_exit(softnet_lock);
