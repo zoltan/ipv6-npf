@@ -142,7 +142,7 @@ npfctl_create_mask(sa_family_t family, u_int length, npf_addr_t *mask)
 		part = htonl(0xffffffff << (32 - length));
 		memset(mask, part, 8);
 	} else if (family == AF_INET6) {
-		while(length > 32) {
+		while (length > 32) {
 			memset(mask, 0xffffffff, 32);
 			mask += 32;
 			length -= 32;
