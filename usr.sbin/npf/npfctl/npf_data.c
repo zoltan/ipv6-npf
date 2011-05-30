@@ -136,10 +136,10 @@ void
 npfctl_create_mask(sa_family_t family, u_int length, npf_addr_t *omask)
 {
 	uint32_t part;
-	npf_addr_t *mask = omask;
+	uint32_t *mask = (uint32_t*)omask;
 
 	memset(omask, 0, 16);
-	printf("X mask before: %x %x %x %x\n", *((unsigned int *)omask), *((unsigned int *)omask+4), *((unsigned int *)omask+8), *((unsigned int *)omask+12));
+	printf("X mask before: %x %x %x %x\n", *((unsigned int *)omask), *((unsigned int *)omask+1), *((unsigned int *)omask+2), *((unsigned int *)omask+3));
 	if (family == AF_INET) {
 		part = htonl(0xffffffff << (32 - length));
 		memset(mask, part, 4);
@@ -148,13 +148,13 @@ npfctl_create_mask(sa_family_t family, u_int length, npf_addr_t *omask)
 		while (length > 32) {
 			part = htonl(0xffffffff);
 			memset(mask, part, 4);
-			mask += 4;
+			mask += 1;
 			length -= 32;
 		}
 		part = htonl(0xffffffff << (32 - length));
 		memset(mask, part, 4);
 	}
-	printf("created mask: %x %x %x %x\n", *((unsigned int *)omask), *((unsigned int *)omask+4), *((unsigned int *)omask+8), *((unsigned int *)omask+12));
+	printf("created mask: %x %x %x %x\n", *((unsigned int *)omask), *((unsigned int *)omask+1), *((unsigned int *)omask+2), *((unsigned int *)omask+3));
 }
 
 sa_family_t
@@ -215,11 +215,11 @@ npfctl_parse_cidr(char *str, sa_family_t addrfamily, npf_addr_t *addr, npf_addr_
 		if (ret != 1) {
 			printf("TODO: error");
 		}
-		printf("parse_cidr, addr: %x %x %x %x\n", *((unsigned int *)addr), *((unsigned int *)addr+4), *((unsigned int *)addr+8), *((unsigned int *)addr+12));
+		printf("parse_cidr, addr: %x %x %x %x\n", *((unsigned int *)addr), *((unsigned int *)addr+1), *((unsigned int *)addr+2), *((unsigned int *)addr+3));
 		npfctl_create_mask(addrfamily, masklength, mask);
 	}
 
-	printf("parse_cidr(%s) addr: %x %x %x %x\n", str, *((unsigned int *)addr), *((unsigned int *)addr+4), *((unsigned int *)addr+8), *((unsigned int *)addr+12));
+	printf("parse_cidr(%s) addr: %x %x %x %x\n", str, *((unsigned int *)addr), *((unsigned int *)addr+1), *((unsigned int *)addr+2), *((unsigned int *)addr+3));
 	return addrfamily;
 }
 
