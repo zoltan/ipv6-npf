@@ -79,7 +79,7 @@ int		npfctl_ioctl_send(int);
 struct ifaddrs *npfctl_getif(char *, unsigned int *, bool, sa_family_t);
 void		npfctl_create_mask(sa_family_t, u_int, npf_addr_t *);
 sa_family_t	npfctl_get_addrfamily(const char *);
-sa_family_t	npfctl_parse_cidr(char *, npf_addr_t *, npf_addr_t *);
+sa_family_t	npfctl_parse_cidr(char *, sa_family_t, npf_addr_t *, npf_addr_t *);
 bool		npfctl_parse_port(char *, bool *, in_port_t *, in_port_t *);
 
 void		npfctl_fill_table(nl_table_t *, char *);

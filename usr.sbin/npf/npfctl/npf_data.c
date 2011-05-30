@@ -133,23 +133,28 @@ npfctl_parse_port(char *ostr, bool *range, in_port_t *fport, in_port_t *tport)
 }
 
 void
-npfctl_create_mask(sa_family_t family, u_int length, npf_addr_t *mask)
+npfctl_create_mask(sa_family_t family, u_int length, npf_addr_t *omask)
 {
 	uint32_t part;
+	npf_addr_t *mask = omask;
 
-	memset(mask, 0, sizeof(npf_addr_t));
+	memset(omask, 0, 16);
+	printf("X mask before: %x %x %x %x\n", *((unsigned int *)omask), *((unsigned int *)omask+4), *((unsigned int *)omask+8), *((unsigned int *)omask+12));
 	if (family == AF_INET) {
 		part = htonl(0xffffffff << (32 - length));
-		memset(mask, part, 8);
+		memset(mask, part, 4);
 	} else if (family == AF_INET6) {
+		printf("ipv6 mask, length: %d\n", length);
 		while (length > 32) {
-			memset(mask, 0xffffffff, 32);
-			mask += 32;
+			part = htonl(0xffffffff);
+			memset(mask, part, 4);
+			mask += 4;
 			length -= 32;
 		}
 		part = htonl(0xffffffff << (32 - length));
-		memset(mask, part, 32);
+		memset(mask, part, 4);
 	}
+	printf("created mask: %x %x %x %x\n", *((unsigned int *)omask), *((unsigned int *)omask+4), *((unsigned int *)omask+8), *((unsigned int *)omask+12));
 }
 
 sa_family_t
@@ -171,20 +176,17 @@ npfctl_get_addrfamily(const char *ostr)
 		return AF_UNSPEC;
 	family = res->ai_family;
 	freeaddrinfo(res);
-
+	free(str);
 	return family;
 }
 
 sa_family_t
-npfctl_parse_cidr(char *str, npf_addr_t *addr, npf_addr_t *mask)
+npfctl_parse_cidr(char *str, sa_family_t addrfamily, npf_addr_t *addr, npf_addr_t *mask)
 {
-	in_addr_t v4addr, v4mask;
-	bool copy = false;
 
 	if (strcmp(str, "any") == 0) {
-		v4addr = 0x0;
-		v4mask = 0x0;
-		copy = true;
+		memset(addr, 0, 16);
+		memset(mask, 0, 16);
 	} else if (isalpha((unsigned char)*str)) {
 		/* TODO: handle multiple addresses per interface */
 		struct ifaddrs *ifa;
@@ -195,17 +197,10 @@ npfctl_parse_cidr(char *str, npf_addr_t *addr, npf_addr_t *mask)
 		}
 		/* Interface address. */
 		sin = (struct sockaddr_in *)ifa->ifa_addr;
-		v4addr = sin->sin_addr.s_addr;
-		v4mask = 0xffffffff;
-		copy = true;
+		memcpy(addr, &(sin->sin_addr.s_addr), sizeof(struct in_addr));
+		//v4mask = 0xffffffff; - TODO!
 	} else {
 		u_int masklength;
-		sa_family_t addrfamily = npfctl_get_addrfamily(str);
-
-		if (addrfamily == AF_UNSPEC) {
-			errx(EXIT_FAILURE, "'%s' is an invalid address", str);
-			return AF_UNSPEC;
-		}
 		char *p = strchr(str, '/');
 		if (p != NULL) {
 			*p++ = '\0';
@@ -216,17 +211,16 @@ npfctl_parse_cidr(char *str, npf_addr_t *addr, npf_addr_t *mask)
 			else
 				masklength = 128;
 		}
-		inet_pton(addrfamily, str, addr);
+		int ret = inet_pton(addrfamily, str, addr);
+		if (ret != 1) {
+			printf("TODO: error");
+		}
+		printf("parse_cidr, addr: %x %x %x %x\n", *((unsigned int *)addr), *((unsigned int *)addr+4), *((unsigned int *)addr+8), *((unsigned int *)addr+12));
 		npfctl_create_mask(addrfamily, masklength, mask);
-		return addrfamily;
 	}
 
-	if(copy) {
-	    memcpy(addr, &v4addr, sizeof(in_addr_t));
-	    memcpy(mask, &v4mask, sizeof(in_addr_t));
-	}
-	
-	return AF_INET;
+	printf("parse_cidr(%s) addr: %x %x %x %x\n", str, *((unsigned int *)addr), *((unsigned int *)addr+4), *((unsigned int *)addr+8), *((unsigned int *)addr+12));
+	return addrfamily;
 }
 
 static bool
@@ -284,7 +278,7 @@ npfctl_fill_table(nl_table_t *tl, char *fname)
 			continue;
 
 		/* IPv4 CIDR: a.b.c.d/mask */
-		if (!npfctl_parse_cidr(buf, &addr, &mask)) {
+		if (!npfctl_parse_cidr(buf, npfctl_get_addrfamily(buf), &addr, &mask)) {
 			errx(EXIT_FAILURE, "invalid table entry at line %d", l);
 		}
 
@@ -302,7 +296,7 @@ npfctl_fill_table(nl_table_t *tl, char *fname)
  */
 
 static void
-npfctl_rulenc_cidr(void **nc, int nblocks[], var_t *dat, bool sd)
+npfctl_rulenc_cidr(void **nc, int nblocks[], var_t *dat, bool sd, sa_family_t addrfamily)
 {
 	element_t *el = dat->v_elements;
 	int foff;
@@ -321,15 +315,15 @@ npfctl_rulenc_cidr(void **nc, int nblocks[], var_t *dat, bool sd)
 	for (el = dat->v_elements; el != NULL; el = el->e_next) {
 		npf_addr_t addr, mask;
 
-		sa_family_t family = npfctl_parse_cidr(el->e_data, &addr, &mask);
-		if (family == AF_INET)
+		npfctl_parse_cidr(el->e_data, addrfamily, &addr, &mask);
+		if (addrfamily == AF_INET)
 		    nblocks[1]--;
-		else if (family == AF_INET6)
+		else if (addrfamily == AF_INET6)
 		    nblocks[3]--;
 		foff = npfctl_failure_offset(nblocks);
-		if (family == AF_INET) 
+		if (addrfamily == AF_INET) 
 			npfctl_gennc_v4cidr(nc, foff, &addr, &mask, sd);
-		else if (family == AF_INET6)
+		else if (addrfamily == AF_INET6)
 			npfctl_gennc_v6cidr(nc, foff, &addr, &mask, sd);
 	}
 }
@@ -359,10 +353,10 @@ npfctl_rulenc_ports(void **nc, int nblocks[], var_t *dat, bool tcpudp,
 
 static void
 npfctl_rulenc_block(void **nc, int nblocks[], var_t *cidr, var_t *ports,
-    bool both, bool tcpudp, bool sd)
+    bool both, bool tcpudp, bool sd, sa_family_t addrfamily)
 {
 
-	npfctl_rulenc_cidr(nc, nblocks, cidr, sd);
+	npfctl_rulenc_cidr(nc, nblocks, cidr, sd, addrfamily);
 	if (ports == NULL) {
 		return;
 	}
@@ -466,11 +460,11 @@ skip_proto:
 	 */
 	if (from) {
 		npfctl_rulenc_block(&nc, nblocks, from, fports,
-		    both, tcpudp, true);
+		    both, tcpudp, true, addrfamily);
 	}
 	if (to) {
 		npfctl_rulenc_block(&nc, nblocks, to, tports,
-		    both, tcpudp, false);
+		    both, tcpudp, false, addrfamily);
 	}
 
 	if (icmp) {

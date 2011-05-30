@@ -707,7 +707,7 @@ npfctl_parse_nat(char *buf)
 	PARSE_NEXT_TOKEN();
 	raddr_v = npfctl_parsevalue(p);
 	raddr_s = npfctl_val_single(raddr_v, p);
-	npfctl_parse_cidr(raddr_s, &raddr, &_dummy);
+	npfctl_parse_cidr(raddr_s, npfctl_get_addrfamily(raddr_s), &raddr, &_dummy);
 
 	if (rdr) {
 		PARSE_NEXT_TOKEN();
@@ -758,7 +758,7 @@ npfctl_parse_nat(char *buf)
 		npf_addr_t taddr;
 		nl_nat_t *bn;
 
-		npfctl_parse_cidr(taddr_s, &taddr, &_dummy);
+		npfctl_parse_cidr(taddr_s, npfctl_get_addrfamily(taddr_s), &taddr, &_dummy);
 		bn = npf_nat_create(NPF_NATIN, 0, if_idx, &taddr, AF_INET, 0);
 		npfctl_rule_ncode(bn, NULL, NULL, -1, -1,
 		    to_v, AF_INET, NULL, raddr_v, NULL);
