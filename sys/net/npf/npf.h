@@ -121,10 +121,15 @@ npf_iscached(const npf_cache_t *npc, const int inf)
 static inline int
 npf_cache_ipproto(const npf_cache_t *npc)
 {
-	const struct ip *ip = &npc->npc_ip.v4;
-
 	KASSERT(npf_iscached(npc, NPC_IP46));
-	return ip->ip_p;
+	if (npc->npc_info & NPC_IP4) {
+		return npc->npc_ip.v4.ip_p;
+	} else if (npc->npc_info & NPC_IP6) {
+		return npc->npc_ip.v6.ip6_nxt;
+	}
+
+	KASSERT(false);
+	return 0;
 }
 
 /* Network buffer interface. */
