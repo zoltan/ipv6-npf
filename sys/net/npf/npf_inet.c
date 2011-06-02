@@ -243,7 +243,7 @@ npf_fetch_ip(npf_cache_t *npc, nbuf_t *nbuf, void *n_ptr)
 			return false;
 		}
 		/* Check header length and fragment offset. */
-		if (npf_cache_hlen(npc) < sizeof(struct ip)) {
+		if ((ip->ip_hl << 2) < sizeof(struct ip)) {
 			return false;
 		}
 		if (ip->ip_off & ~htons(IP_DF | IP_RF)) {
