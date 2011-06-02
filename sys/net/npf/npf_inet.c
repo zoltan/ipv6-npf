@@ -229,6 +229,7 @@ bool
 npf_fetch_ip(npf_cache_t *npc, nbuf_t *nbuf, void *n_ptr)
 {
 	struct ip *ip;
+	struct ip6_hdr *ip6;
 	uint8_t ver;
 
 	if (nbuf_fetch_datum(nbuf, n_ptr, sizeof(uint8_t), &ver)) {
@@ -258,7 +259,16 @@ npf_fetch_ip(npf_cache_t *npc, nbuf_t *nbuf, void *n_ptr)
 		break;
 
 	case (IPV6_VERSION >> 4):
-		/* TODO */
+		ip6 = &npc->npc_ip.v6;
+		if (nbuf_fetch_datum(nbuf, n_ptr, sizeof(struct ip6_hdr), ip6)) {
+			return false;
+		}
+		npc->npc_ipsz = sizeof(struct in6_addr);
+		npc->npc_srcip = (npf_addr_t *)&ip6->ip6_src;
+		npc->npc_dstip = (npf_addr_t *)&ip6->ip6_dst;
+		npc->npc_info |= NPC_IP6;
+		break;
+
 	default:
 		return false;
 	}
