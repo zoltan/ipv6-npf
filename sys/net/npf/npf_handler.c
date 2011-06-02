@@ -270,6 +270,8 @@ npf_unregister_pfil(void)
 
 	if (npf_ph_if) {
 		(void)pfil_remove_hook(npf_packet_handler, NULL,
+		    PFIL_ALL, npf_ph_inet6);
+		(void)pfil_remove_hook(npf_packet_handler, NULL,
 		    PFIL_ALL, npf_ph_inet);
 		(void)pfil_remove_hook(npf_ifhook, NULL,
 		    PFIL_IFADDR | PFIL_IFNET, npf_ph_if);
