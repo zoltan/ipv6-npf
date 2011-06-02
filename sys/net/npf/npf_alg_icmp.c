@@ -247,10 +247,9 @@ npfa_icmp_session(npf_cache_t *npc, nbuf_t *nbuf, void *keyptr)
 	KASSERT(npf_iscached(npc, NPC_ICMP));
 
 	/* Advance to ICMP header. */
-	struct ip *ip = &npc->npc_ip.v4;
 	void *n_ptr = nbuf_dataptr(nbuf);
 
-	if ((n_ptr = nbuf_advance(&nbuf, n_ptr, ip->ip_hl << 2)) == NULL) {
+	if ((n_ptr = nbuf_advance(&nbuf, n_ptr, npf_cache_hlen(npc))) == NULL) {
 		return false;
 	}
 
@@ -306,7 +305,7 @@ npfa_icmp_natin(npf_cache_t *npc, nbuf_t *nbuf, void *ntptr)
 	 * embedded packet changes, while data is not rewritten in the cache.
 	 */
 	const int proto = npf_cache_ipproto(&enpc);
-	const struct ip * const ip = &npc->npc_ip.v4, *eip = &enpc.npc_ip.v4;
+	const struct ip *eip = &enpc.npc_ip.v4;
 	const struct icmp * const ic = &npc->npc_l4.icmp;
 	uint16_t cksum = ic->icmp_cksum, ecksum = eip->ip_sum, l4cksum;
 	npf_nat_t *nt = ntptr;
@@ -331,7 +330,7 @@ npfa_icmp_natin(npf_cache_t *npc, nbuf_t *nbuf, void *ntptr)
 	 * to the embedded IP header after ICMP header.
 	 */
 	void *n_ptr = nbuf_dataptr(nbuf), *cnbuf = nbuf, *cnptr = n_ptr;
-	u_int offby = (ip->ip_hl << 2) + offsetof(struct icmp, icmp_ip);
+	u_int offby = npf_cache_hlen(npc) + offsetof(struct icmp, icmp_ip);
 
 	if ((n_ptr = nbuf_advance(&nbuf, n_ptr, offby)) == NULL) {
 		return false;
@@ -365,7 +364,7 @@ npfa_icmp_natin(npf_cache_t *npc, nbuf_t *nbuf, void *ntptr)
 	}
 	cksum = npf_fixup16_cksum(cksum, ecksum, eip->ip_sum);
 
-	offby = (ip->ip_hl << 2) + offsetof(struct icmp, icmp_cksum);
+	offby = npf_cache_hlen(npc) + offsetof(struct icmp, icmp_cksum);
 	if (nbuf_advstore(&cnbuf, &cnptr, offby, sizeof(uint16_t), &cksum)) {
 		return false;
 	}

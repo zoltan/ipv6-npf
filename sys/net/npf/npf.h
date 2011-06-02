@@ -132,6 +132,20 @@ npf_cache_ipproto(const npf_cache_t *npc)
 	return 0;
 }
 
+static inline int
+npf_cache_hlen(const npf_cache_t *npc)
+{
+	KASSERT(npf_iscached(npc, NPC_IP46));
+	if (npc->npc_info & NPC_IP4) {
+		return npc->npc_ip.v4.ip_hl << 2;
+	} else if(npc->npc_info & NPC_IP6) {
+		return 40;
+	}
+
+	KASSERT(false);
+	return 0;
+}
+
 /* Network buffer interface. */
 void *		nbuf_dataptr(void *);
 void *		nbuf_advance(nbuf_t **, void *, u_int);
