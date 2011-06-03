@@ -251,6 +251,7 @@ npf_register_pfil(void)
 	error = pfil_add_hook(npf_packet_handler, NULL,
 	    PFIL_WAITOK | PFIL_ALL, npf_ph_inet6);
 	KASSERT(error == 0);
+	printf("npf: registering pfil hooks\n");
 fail:
 	KERNEL_UNLOCK_ONE(NULL);
 	mutex_exit(softnet_lock);
@@ -269,6 +270,7 @@ npf_unregister_pfil(void)
 	KERNEL_LOCK(1, NULL);
 
 	if (npf_ph_if) {
+		printf("npf: unregistering pfil hooks\n");
 		(void)pfil_remove_hook(npf_packet_handler, NULL,
 		    PFIL_ALL, npf_ph_inet6);
 		(void)pfil_remove_hook(npf_packet_handler, NULL,
