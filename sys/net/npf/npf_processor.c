@@ -146,6 +146,7 @@ npf_ncode_process(npf_cache_t *npc, const void *ncode,
 	uint32_t	regs[NPF_NREGS];
 	/* Local, state variables. */
 	uint32_t d, i, n;
+	npf_addr_t addr, mask;
 	u_int lcount;
 	int cmpval;
 
@@ -284,10 +285,16 @@ cisc_like:
 	case NPF_OPCODE_IP4MASK:
 		/* Source/destination, network address, subnet mask. */
 		i_ptr = nc_fetch_word(i_ptr, &d);
-		i_ptr = nc_fetch_double(i_ptr, &n, &i);
-		cmpval = npf_match_ip4mask(npc, nbuf, n_ptr, d, n, i);
+		i_ptr = nc_fetch_double(i_ptr, &addr.s6_addr32[0], &mask.s6_addr32[0]);
+		cmpval = npf_match_ipmask(npc, nbuf, n_ptr, d, addr.s6_addr32, mask.s6_addr32);
 		break;
 	case NPF_OPCODE_IP6MASK:
+		i_ptr = nc_fetch_word(i_ptr, &d);
+		i_ptr = nc_fetch_double(i_ptr, &addr.s6_addr32[0], &addr.s6_addr32[1]);
+		i_ptr = nc_fetch_double(i_ptr, &addr.s6_addr32[2], &addr.s6_addr32[3]);
+		i_ptr = nc_fetch_double(i_ptr, &mask.s6_addr32[0], &mask.s6_addr32[1]);
+		i_ptr = nc_fetch_double(i_ptr, &mask.s6_addr32[2], &mask.s6_addr32[3]);
+		cmpval = npf_match_ipmask(npc, nbuf, n_ptr, d, addr.s6_addr32, mask.s6_addr32);
 		break;
 	case NPF_OPCODE_IP4TABLE:
 		/* Source/destination, NPF table ID. */

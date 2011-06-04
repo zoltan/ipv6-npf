@@ -117,11 +117,11 @@ npf_match_ip4table(npf_cache_t *npc, nbuf_t *nbuf, void *n_ptr,
  * npf_match_ip4mask: match IPv4 address against netaddr/subnet.
  */
 int
-npf_match_ip4mask(npf_cache_t *npc, nbuf_t *nbuf, void *n_ptr,
-    const int sd, in_addr_t netaddr, in_addr_t subnet)
+npf_match_ipmask(npf_cache_t *npc, nbuf_t *nbuf, void *n_ptr,
+    const int sd, const uint32_t *netaddr, const uint32_t *subnet)
 {
-	struct ip *ip = &npc->npc_ip.v4;
-	in_addr_t ip4addr;
+	uint32_t *addr;
+	int len;	
 
 	if (!npf_iscached(npc, NPC_IP46)) {
 		if (!npf_fetch_ip(npc, nbuf, n_ptr)) {
@@ -129,9 +129,23 @@ npf_match_ip4mask(npf_cache_t *npc, nbuf_t *nbuf, void *n_ptr,
 		}
 		KASSERT(npf_iscached(npc, NPC_IP46));
 	}
-	ip4addr = sd ? ip->ip_src.s_addr : ip->ip_dst.s_addr;
 
-	return (ip4addr & subnet) == netaddr ? 0 : -1;
+	if (npc->npc_info & NPC_IP4) {
+		addr = sd ? &(npc->npc_ip.v4.ip_src.s_addr) : &(npc->npc_ip.v4.ip_dst.s_addr);
+		len = 1;
+	} else if (npc->npc_info & NPC_IP6) {
+		len = 4;
+		addr = sd ? npc->npc_ip.v6.ip6_src.s6_addr32 : npc->npc_ip.v6.ip6_dst.s6_addr32;
+	} else { 
+		KASSERT(false);
+		return -1;
+	}
+
+	for(int i = 0; i < len; i++)
+		if((*addr++ & *subnet++) != *netaddr++)
+			return -1;
+
+	return 0;
 }
 
 /*

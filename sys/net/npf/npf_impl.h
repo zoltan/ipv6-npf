@@ -171,8 +171,8 @@ void		npf_return_block(npf_cache_t *, nbuf_t *, const int);
 int		npf_match_ether(nbuf_t *, int, int, uint16_t, uint32_t *);
 int		npf_match_ip4table(npf_cache_t *, nbuf_t *, void *,
 		    const int, const u_int);
-int		npf_match_ip4mask(npf_cache_t *, nbuf_t *, void *,
-		    const int, in_addr_t, in_addr_t);
+int		npf_match_ipmask(npf_cache_t *, nbuf_t *, void *,
+		    const int, const uint32_t *, const uint32_t *);
 int		npf_match_tcp_ports(npf_cache_t *, nbuf_t *, void *,
 		    const int, const uint32_t);
 int		npf_match_udp_ports(npf_cache_t *, nbuf_t *, void *,
