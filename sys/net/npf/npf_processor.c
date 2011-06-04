@@ -450,6 +450,9 @@ jmp_check:
 	case NPF_OPCODE_IP4MASK:
 		error = nc_ptr_check(&iptr, nc, sz, 3, NULL, 0);
 		break;
+	case NPF_OPCODE_IP6MASK:
+		error = nc_ptr_check(&iptr, nc, sz, 9, NULL, 0);
+		break;
 	case NPF_OPCODE_IP4TABLE:
 		error = nc_ptr_check(&iptr, nc, sz, 2, NULL, 0);
 		break;
