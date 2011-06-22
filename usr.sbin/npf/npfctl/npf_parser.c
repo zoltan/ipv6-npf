@@ -161,7 +161,9 @@ npfctl_val_interface(var_t *v, char *p, bool reqaddr)
 	char *iface = npfctl_val_single(v, p);
 	u_int if_idx;
 
-	if (iface == NULL || npfctl_getif(iface, &if_idx, reqaddr, AF_INET) == NULL) {
+	if (iface == NULL ||
+		((npfctl_getif(iface, &if_idx, reqaddr, AF_INET) == NULL) &&
+		 (npfctl_getif(iface, &if_idx, reqaddr, AF_INET6) == NULL))) {
 		errx(EXIT_FAILURE, "invalid interface '%s'", iface);
 	}
 	return if_idx;
