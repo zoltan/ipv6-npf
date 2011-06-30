@@ -85,7 +85,7 @@ npf_tcp_inwindow(const npf_cache_t *npc, nbuf_t *nbuf, npf_state_t *nst,
 	uint32_t win;
 
 	KASSERT(npf_iscached(npc, NPC_TCP));
-	tcpdlen = npf_tcpsaw(__UNCONST(npc), &seq, &ack, &win);
+	tcpdlen = npf_tcpsaw(__UNCONST(npc), nbuf, &seq, &ack, &win);
 	end = seq + tcpdlen;
 	if (tcpfl & TH_SYN) {
 		end++;

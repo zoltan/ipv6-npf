@@ -133,7 +133,7 @@ npf_cache_ipproto(const npf_cache_t *npc)
 }
 
 static inline int
-npf_cache_hlen(const npf_cache_t *npc)
+npf_cache_hlen(const npf_cache_t *npc, nbuf_t *nbuf)
 {
 	KASSERT(npf_iscached(npc, NPC_IP46));
 	if (npc->npc_info & NPC_IP4) {

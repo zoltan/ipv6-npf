@@ -126,7 +126,7 @@ npf_addr_sum(const int sz, const npf_addr_t *a1, const npf_addr_t *a2)
  * Returns all values in host byte-order.
  */
 int
-npf_tcpsaw(npf_cache_t *npc, tcp_seq *seq, tcp_seq *ack, uint32_t *win)
+npf_tcpsaw(npf_cache_t *npc, nbuf_t *nbuf, tcp_seq *seq, tcp_seq *ack, uint32_t *win)
 {
 	struct ip *ip = &npc->npc_ip.v4;
 	struct tcphdr *th = &npc->npc_l4.tcp;
@@ -137,7 +137,7 @@ npf_tcpsaw(npf_cache_t *npc, tcp_seq *seq, tcp_seq *ack, uint32_t *win)
 	*ack = ntohl(th->th_ack);
 	*win = (uint32_t)ntohs(th->th_win);
 
-	return ntohs(ip->ip_len) - npf_cache_hlen(npc) - (th->th_off << 2);
+	return ntohs(ip->ip_len) - npf_cache_hlen(npc, nbuf) - (th->th_off << 2);
 }
 
 /*
@@ -164,7 +164,7 @@ npf_fetch_tcpopts(const npf_cache_t *npc, nbuf_t *nbuf,
 	KASSERT(topts_len <= MAX_TCPOPTLEN);
 
 	/* First step: IP and TCP header up to options. */
-	step = npf_cache_hlen(npc) + sizeof(struct tcphdr);
+	step = npf_cache_hlen(npc, nbuf) + sizeof(struct tcphdr);
 next:
 	if (nbuf_advfetch(&nbuf, &n_ptr, step, sizeof(val), &val)) {
 		return false;
@@ -290,7 +290,7 @@ npf_fetch_tcp(npf_cache_t *npc, nbuf_t *nbuf, void *n_ptr)
 	th = &npc->npc_l4.tcp;
 
 	/* Fetch TCP header. */
-	if (nbuf_advfetch(&nbuf, &n_ptr, npf_cache_hlen(npc), sizeof(struct tcphdr), th)) {
+	if (nbuf_advfetch(&nbuf, &n_ptr, npf_cache_hlen(npc, nbuf), sizeof(struct tcphdr), th)) {
 		return false;
 	}
 
@@ -315,7 +315,7 @@ npf_fetch_udp(npf_cache_t *npc, nbuf_t *nbuf, void *n_ptr)
 	uh = &npc->npc_l4.udp;
 
 	/* Fetch ICMP header. */
-	if (nbuf_advfetch(&nbuf, &n_ptr, npf_cache_hlen(npc), sizeof(struct udphdr), uh)) {
+	if (nbuf_advfetch(&nbuf, &n_ptr, npf_cache_hlen(npc, nbuf), sizeof(struct udphdr), uh)) {
 		return false;
 	}
 
@@ -347,7 +347,7 @@ npf_fetch_icmp(npf_cache_t *npc, nbuf_t *nbuf, void *n_ptr)
 
 	/* Fetch basic ICMP header, up to the "data" point. */
 	iclen = offsetof(struct icmp, icmp_data);
-	if (nbuf_advfetch(&nbuf, &n_ptr, npf_cache_hlen(npc), iclen, ic)) {
+	if (nbuf_advfetch(&nbuf, &n_ptr, npf_cache_hlen(npc, nbuf), iclen, ic)) {
 		return false;
 	}
 
@@ -421,7 +421,7 @@ npf_rwrport(npf_cache_t *npc, nbuf_t *nbuf, void *n_ptr, const int di,
     in_port_t port)
 {
 	const int proto = npf_cache_ipproto(npc);
-	u_int offby = npf_cache_hlen(npc);
+	u_int offby = npf_cache_hlen(npc, nbuf);
 	in_port_t *oport;
 
 	KASSERT(npf_iscached(npc, NPC_TCP) || npf_iscached(npc, NPC_UDP));
@@ -484,7 +484,7 @@ npf_rwrcksum(npf_cache_t *npc, nbuf_t *nbuf, void *n_ptr, const int di,
 			return false;
 
 		ip->ip_sum = ipsum;
-		offby = npf_cache_hlen(npc) - offby;
+		offby = npf_cache_hlen(npc, nbuf) - offby;
 	} else {
 		/* No checksum for IPv6. */
 		KASSERT(npf_iscached(npc, NPC_IP6));
@@ -633,7 +633,7 @@ npf_normalize(npf_cache_t *npc, nbuf_t *nbuf,
 	if (!npf_fetch_tcpopts(npc, nbuf, &mss, &wscale)) {
 		return false;
 	}
-	offby = npf_cache_hlen(npc) + offsetof(struct tcphdr, th_sum);
+	offby = npf_cache_hlen(npc, nbuf) + offsetof(struct tcphdr, th_sum);
 	if (nbuf_advstore(&nbuf, &n_ptr, offby, sizeof(cksum), &cksum)) {
 		return false;
 	}

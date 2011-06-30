@@ -66,7 +66,7 @@ npf_return_tcp(npf_cache_t *npc, nbuf_t *nbuf)
 
 	/* Fetch relevant data. */
 	KASSERT(npf_iscached(npc, NPC_IP46 | NPC_LAYER4));
-	tcpdlen = npf_tcpsaw(npc, &seq, &ack, &win);
+	tcpdlen = npf_tcpsaw(npc, nbuf, &seq, &ack, &win);
 	oip = &npc->npc_ip.v4;
 	oth = &npc->npc_l4.tcp;
 

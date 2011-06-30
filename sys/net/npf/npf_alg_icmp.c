@@ -249,7 +249,7 @@ npfa_icmp_session(npf_cache_t *npc, nbuf_t *nbuf, void *keyptr)
 	/* Advance to ICMP header. */
 	void *n_ptr = nbuf_dataptr(nbuf);
 
-	if ((n_ptr = nbuf_advance(&nbuf, n_ptr, npf_cache_hlen(npc))) == NULL) {
+	if ((n_ptr = nbuf_advance(&nbuf, n_ptr, npf_cache_hlen(npc, nbuf))) == NULL) {
 		return false;
 	}
 
@@ -330,7 +330,7 @@ npfa_icmp_natin(npf_cache_t *npc, nbuf_t *nbuf, void *ntptr)
 	 * to the embedded IP header after ICMP header.
 	 */
 	void *n_ptr = nbuf_dataptr(nbuf), *cnbuf = nbuf, *cnptr = n_ptr;
-	u_int offby = npf_cache_hlen(npc) + offsetof(struct icmp, icmp_ip);
+	u_int offby = npf_cache_hlen(npc, nbuf) + offsetof(struct icmp, icmp_ip);
 
 	if ((n_ptr = nbuf_advance(&nbuf, n_ptr, offby)) == NULL) {
 		return false;
@@ -364,7 +364,7 @@ npfa_icmp_natin(npf_cache_t *npc, nbuf_t *nbuf, void *ntptr)
 	}
 	cksum = npf_fixup16_cksum(cksum, ecksum, eip->ip_sum);
 
-	offby = npf_cache_hlen(npc) + offsetof(struct icmp, icmp_cksum);
+	offby = npf_cache_hlen(npc, nbuf) + offsetof(struct icmp, icmp_cksum);
 	if (nbuf_advstore(&cnbuf, &cnptr, offby, sizeof(uint16_t), &cksum)) {
 		return false;
 	}

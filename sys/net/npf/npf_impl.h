@@ -161,7 +161,7 @@ uint16_t	npf_fixup16_cksum(uint16_t, uint16_t, uint16_t);
 uint16_t	npf_fixup32_cksum(uint16_t, uint32_t, uint32_t);
 uint16_t	npf_addr_cksum(uint16_t, int, npf_addr_t *, npf_addr_t *);
 uint32_t	npf_addr_sum(const int, const npf_addr_t *, const npf_addr_t *);
-int		npf_tcpsaw(npf_cache_t *, tcp_seq *, tcp_seq *, uint32_t *);
+int		npf_tcpsaw(npf_cache_t *, nbuf_t *, tcp_seq *, tcp_seq *, uint32_t *);
 bool		npf_fetch_tcpopts(const npf_cache_t *, nbuf_t *,
 		    uint16_t *, int *);
 bool		npf_normalize(npf_cache_t *, nbuf_t *, bool, bool, u_int, u_int);
