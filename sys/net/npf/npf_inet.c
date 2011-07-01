@@ -277,14 +277,13 @@ npf_fetch_ip(npf_cache_t *npc, nbuf_t *nbuf, void *n_ptr)
 bool
 npf_fetch_tcp(npf_cache_t *npc, nbuf_t *nbuf, void *n_ptr)
 {
-	struct ip *ip = &npc->npc_ip.v4;
 	struct tcphdr *th;
 
 	/* Must have IP header processed for its length and protocol. */
 	if (!npf_iscached(npc, NPC_IP46) && !npf_fetch_ip(npc, nbuf, n_ptr)) {
 		return false;
 	}
-	if (ip->ip_p != IPPROTO_TCP) {
+	if (npf_cache_ipproto(npc) != IPPROTO_TCP) {
 		return false;
 	}
 	th = &npc->npc_l4.tcp;
