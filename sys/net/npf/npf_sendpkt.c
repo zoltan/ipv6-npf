@@ -163,7 +163,11 @@ npf_return_icmp(nbuf_t *nbuf)
 {
 	struct mbuf *m = nbuf;
 
-	icmp_error(m, ICMP_UNREACH, ICMP_UNREACH_ADMIN_PROHIBIT, 0, 0);
+	if (npc->npc_info & NPC_IP4) {
+		icmp_error(m, ICMP_UNREACH, ICMP_UNREACH_ADMIN_PROHIBIT, 0, 0);
+	} else {
+		icmp6_error(m, ICMP6_DST_UNREACH, ICMP6_DST_UNREACH_ADMIN, 0);
+	}
 	return 0;
 }
 
