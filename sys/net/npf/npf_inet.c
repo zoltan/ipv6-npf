@@ -136,8 +136,10 @@ npf_tcpsaw(npf_cache_t *npc, nbuf_t *nbuf, tcp_seq *seq, tcp_seq *ack, uint32_t 
 	*ack = ntohl(th->th_ack);
 	*win = (uint32_t)ntohs(th->th_win);
 
-	// total length of packet - header length - tcp header length
-	// TODO: move total packet length into npf_cache_t? or tidy this up somehow...
+	/*
+	 * total length of packet - header length - tcp header length
+	 * TODO: move total packet length into npf_cache_t? or tidy this up somehow...
+	 */
 	if (npf_iscached(npc, NPC_IP4)) {
 		struct ip *ip = &npc->npc_ip.v4;
 		return ntohs(ip->ip_len) - npf_cache_hlen(npc, nbuf) - (th->th_off << 2);
