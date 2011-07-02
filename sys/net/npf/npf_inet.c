@@ -130,7 +130,7 @@ npf_tcpsaw(npf_cache_t *npc, nbuf_t *nbuf, tcp_seq *seq, tcp_seq *ack, uint32_t 
 {
 	struct tcphdr *th = &npc->npc_l4.tcp;
 
-	KASSERT(npf_iscached(npc, NPC_IP46 | NPC_TCP));
+	KASSERT(npf_iscached(npc, NPC_TCP));
 
 	*seq = ntohl(th->th_seq);
 	*ack = ntohl(th->th_ack);
@@ -138,13 +138,16 @@ npf_tcpsaw(npf_cache_t *npc, nbuf_t *nbuf, tcp_seq *seq, tcp_seq *ack, uint32_t 
 
 	// total length of packet - header length - tcp header length
 	// TODO: move total packet length into npf_cache_t? or tidy this up somehow...
-	if (npc->npc_info & NPC_IP4) {
+	if (npf_iscached(npc, NPC_IP4)) {
 		struct ip *ip = &npc->npc_ip.v4;
 		return ntohs(ip->ip_len) - npf_cache_hlen(npc, nbuf) - (th->th_off << 2);
 	} else {
+		KASSERT(npf_iscached(npc, NPC_IP6));
 		struct ip6_hdr *ip6 = &npc->npc_ip.v6;
 		return ntohs(ip6->ip6_plen) - (th->th_off << 2);
 	}
+
+	return 0;
 }
 
 /*

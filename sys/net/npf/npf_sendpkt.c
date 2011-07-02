@@ -46,6 +46,7 @@ __KERNEL_RCSID(0, "$NetBSD: npf_sendpkt.c,v 1.4 2011/01/18 20:33:46 rmind Exp $"
 #include <netinet/ip_var.h>
 #include <netinet/tcp.h>
 #include <netinet/ip6.h>
+#include <netinet/icmp6.h>
 #include <netinet6/ip6_var.h>
 #include <sys/mbuf.h>
 
@@ -159,13 +160,14 @@ npf_return_tcp(npf_cache_t *npc, nbuf_t *nbuf)
  * npf_return_icmp: return an ICMP error.
  */
 static int
-npf_return_icmp(nbuf_t *nbuf)
+npf_return_icmp(npf_cache_t *npc, nbuf_t *nbuf)
 {
 	struct mbuf *m = nbuf;
 
-	if (npc->npc_info & NPC_IP4) {
+	if (npf_iscached(npc, NPC_IP4)) {
 		icmp_error(m, ICMP_UNREACH, ICMP_UNREACH_ADMIN_PROHIBIT, 0, 0);
 	} else {
+		KASSERT(npf_iscached(npc, NPC_IP6));
 		icmp6_error(m, ICMP6_DST_UNREACH, ICMP6_DST_UNREACH_ADMIN, 0);
 	}
 	return 0;
@@ -194,7 +196,7 @@ npf_return_block(npf_cache_t *npc, nbuf_t *nbuf, const int retfl)
 		break;
 	case IPPROTO_UDP:
 		if (retfl & NPF_RULE_RETICMP) {
-			(void)npf_return_icmp(nbuf);
+			(void)npf_return_icmp(npc, nbuf);
 		}
 		break;
 	}
