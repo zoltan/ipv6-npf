@@ -173,6 +173,7 @@ npf_return_icmp(nbuf_t *nbuf)
 
 /*
  * npf_return_block: return TCP reset or ICMP host unreachable packet.
+ * TODO: user should be able to specify exact ICMP error codes in config
  */
 void
 npf_return_block(npf_cache_t *npc, nbuf_t *nbuf, const int retfl)
