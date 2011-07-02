@@ -143,7 +143,7 @@ npf_tcpsaw(npf_cache_t *npc, nbuf_t *nbuf, tcp_seq *seq, tcp_seq *ack, uint32_t 
 		return ntohs(ip->ip_len) - npf_cache_hlen(npc, nbuf) - (th->th_off << 2);
 	} else {
 		struct ip6_hdr *ip6 = &npc->npc_ip.v6;
-		return ntohs(ip6->ip6_plen) - npf_cache_hlen(npc, nbuf) - (th->th_off << 2);
+		return ntohs(ip6->ip6_plen) - (th->th_off << 2);
 	}
 }
 

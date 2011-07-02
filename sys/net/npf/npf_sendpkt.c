@@ -45,6 +45,8 @@ __KERNEL_RCSID(0, "$NetBSD: npf_sendpkt.c,v 1.4 2011/01/18 20:33:46 rmind Exp $"
 #include <netinet/ip_icmp.h>
 #include <netinet/ip_var.h>
 #include <netinet/tcp.h>
+#include <netinet/ip6.h>
+#include <netinet6/ip6_var.h>
 #include <sys/mbuf.h>
 
 #include "npf_impl.h"
@@ -58,16 +60,17 @@ static int
 npf_return_tcp(npf_cache_t *npc, nbuf_t *nbuf)
 {
 	struct mbuf *m;
-	struct ip *oip, *ip;
+	struct ip *ip = NULL;
+	struct ip6_hdr *ip6 = NULL;
 	struct tcphdr *oth, *th;
 	tcp_seq seq, ack;
 	int tcpdlen, len;
 	uint32_t win;
 
+
 	/* Fetch relevant data. */
 	KASSERT(npf_iscached(npc, NPC_IP46 | NPC_LAYER4));
 	tcpdlen = npf_tcpsaw(npc, nbuf, &seq, &ack, &win);
-	oip = &npc->npc_ip.v4;
 	oth = &npc->npc_l4.tcp;
 
 	if (oth->th_flags & TH_RST) {
@@ -75,7 +78,11 @@ npf_return_tcp(npf_cache_t *npc, nbuf_t *nbuf)
 	}
 
 	/* Create and setup a network buffer. */
-	len = sizeof(struct ip) + sizeof(struct tcphdr);
+	if (npc->npc_info & NPC_IP4)
+		len = sizeof(struct ip) + sizeof(struct tcphdr);
+	else
+		len = sizeof(struct ip6_hdr) + sizeof(struct tcphdr);
+
 	m = m_gethdr(M_DONTWAIT, MT_HEADER);
 	if (m == NULL) {
 		return ENOMEM;
@@ -84,20 +91,37 @@ npf_return_tcp(npf_cache_t *npc, nbuf_t *nbuf)
 	m->m_len = len;
 	m->m_pkthdr.len = len;
 
-	ip = mtod(m, struct ip *);
-	memset(ip, 0, len);
+	if (npc->npc_info & NPC_IP4) {
+		struct ip *oip = &npc->npc_ip.v4;
+		ip = mtod(m, struct ip *);
+		memset(ip, 0, len);
 
-	/*
-	 * First fill of IPv4 header, for TCP checksum.
-	 * Note: IP length contains TCP header length.
-	 */
-	ip->ip_p = IPPROTO_TCP;
-	ip->ip_src.s_addr = oip->ip_dst.s_addr;
-	ip->ip_dst.s_addr = oip->ip_src.s_addr;
-	ip->ip_len = htons(sizeof(struct tcphdr));
+		/*
+	 	* First fill of IPv4 header, for TCP checksum.
+	 	* Note: IP length contains TCP header length.
+	 	*/
+		ip->ip_p = IPPROTO_TCP;
+		ip->ip_src.s_addr = oip->ip_dst.s_addr;
+		ip->ip_dst.s_addr = oip->ip_src.s_addr;
+		ip->ip_len = htons(sizeof(struct tcphdr));
+
+		th = (struct tcphdr *)(ip + 1);
+	} else {
+		struct ip6_hdr *oip = &npc->npc_ip.v6;
+		ip6 = mtod(m, struct ip6_hdr *);
+		memset(ip6, 0, len);
+
+		ip6->ip6_nxt = IPPROTO_TCP;
+		ip6->ip6_hlim = 255;
+		memcpy(ip6->ip6_src.s6_addr32, oip->ip6_dst.s6_addr32, sizeof(uint32_t) * 4);
+		memcpy(ip6->ip6_dst.s6_addr32, oip->ip6_src.s6_addr32, sizeof(uint32_t) * 4);
+		ip6->ip6_plen = htons(len);
+		ip6->ip6_vfc = IPV6_VERSION;
+
+		th = (struct tcphdr *)(ip6 + 1);
+	}
 
 	/* Construct TCP header and compute the checksum. */
-	th = (struct tcphdr *)(ip + 1);
 	th->th_sport = oth->th_dport;
 	th->th_dport = oth->th_sport;
 	th->th_seq = htonl(ack);
@@ -107,17 +131,28 @@ npf_return_tcp(npf_cache_t *npc, nbuf_t *nbuf)
 	th->th_ack = htonl(seq + tcpdlen);
 	th->th_off = sizeof(struct tcphdr) >> 2;
 	th->th_flags = TH_ACK | TH_RST;
-	th->th_sum = in_cksum(m, len);
 
-	/* Second fill of IPv4 header, fill correct IP length. */
-	ip->ip_v = IPVERSION;
-	ip->ip_hl = sizeof(struct ip) >> 2;
-	ip->ip_tos = IPTOS_LOWDELAY;
-	ip->ip_len = htons(len);
-	ip->ip_ttl = DEFAULT_IP_TTL;
+	if (npc->npc_info & NPC_IP4) {
+		th->th_sum = in_cksum(m, len);
+
+		 /* Second fill of IPv4 header, fill correct IP length. */
+ 		ip->ip_v = IPVERSION;
+        	ip->ip_hl = sizeof(struct ip) >> 2;
+	        ip->ip_tos = IPTOS_LOWDELAY;
+        	ip->ip_len = htons(len);
+	        ip->ip_ttl = DEFAULT_IP_TTL;
+
+
+	} else {
+		th->th_sum = in6_cksum(m, IPPROTO_TCP, sizeof(struct ip6_hdr), sizeof(struct tcphdr));
+	}
 
 	/* Pass to IP layer. */
-	return ip_output(m, NULL, NULL, IP_FORWARDING, NULL, NULL);
+	if (npc->npc_info & NPC_IP4) {
+		return ip_output(m, NULL, NULL, IP_FORWARDING, NULL, NULL);
+	} else {
+		return ip6_output(m, NULL, NULL, IPV6_FORWARDING, NULL, NULL, NULL);
+	}
 }
 
 /*
