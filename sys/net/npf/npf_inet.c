@@ -165,8 +165,8 @@ npf_fetch_tcpopts(const npf_cache_t *npc, nbuf_t *nbuf,
 	uint16_t val16;
 	uint8_t val;
 
-	KASSERT(npf_iscached(npc, NPC_IP46 | NPC_TCP));
-
+	KASSERT(npf_iscached(npc, NPC_IP46));
+	KASSERT(npf_iscached(npc, NPC_TCP));
 	/* Determine if there are any TCP options, get their length. */
 	topts_len = (th->th_off << 2) - sizeof(struct tcphdr);
 	if (topts_len <= 0) {
@@ -508,7 +508,7 @@ npf_rwrcksum(npf_cache_t *npc, nbuf_t *nbuf, void *n_ptr, const int di,
 	if (proto == IPPROTO_ICMP || port == 0) {
 		return true;
 	}
-	KASSERT(npf_iscached(npc, NPC_TCP | NPC_UDP));
+	KASSERT(npf_iscached(npc, NPC_TCP) || npf_iscached(npc, NPC_UDP));
 
 	/* Calculate TCP/UDP checksum. */
 	if (proto == IPPROTO_TCP) {

@@ -326,7 +326,8 @@ npf_state_init(const npf_cache_t *npc, nbuf_t *nbuf, npf_state_t *nst)
 {
 	const int proto = npf_cache_ipproto(npc);
 
-	KASSERT(npf_iscached(npc, NPC_IP46 | NPC_LAYER4));
+	KASSERT(npf_iscached(npc, NPC_IP46));
+	KASSERT(npf_iscached(npc, NPC_LAYER4));
 
 	mutex_init(&nst->nst_lock, MUTEX_DEFAULT, IPL_SOFTNET);
 

@@ -119,7 +119,8 @@ npfa_icmp_match(npf_cache_t *npc, nbuf_t *nbuf, void *ntptr)
 	struct ip *ip = &npc->npc_ip.v4;
 	in_port_t dport;
 
-	KASSERT(npf_iscached(npc, NPC_IP46 | NPC_LAYER4));
+	KASSERT(npf_iscached(npc, NPC_IP46));
+	KASSERT(npf_iscahced(npc, NPC_LAYER4));
 
 	/* Check for low TTL. */
 	if (ip->ip_ttl > TR_MAX_TTL) {
@@ -296,7 +297,8 @@ npfa_icmp_natin(npf_cache_t *npc, nbuf_t *nbuf, void *ntptr)
 		return false;
 	}
 	/* XXX: Restore inversion (inefficient). */
-	KASSERT(npf_iscached(&enpc, NPC_IP46 | NPC_LAYER4));
+	KASSERT(npf_iscached(&enpc, NPC_IP46));
+	KASSERT(npf_iscached(&enpc, NPC_LAYER4));
 	npfa_srcdst_invert(&enpc);
 
 	/*

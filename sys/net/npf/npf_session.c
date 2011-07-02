@@ -506,7 +506,8 @@ npf_session_establish(const npf_cache_t *npc, nbuf_t *nbuf, const int di)
 	if (!sess_tracking) {
 		return NULL;
 	}
-	KASSERT(npf_iscached(npc, NPC_IP46 | NPC_LAYER4));
+	KASSERT(npf_iscached(npc, NPC_IP46));
+	KASSERT(npf_iscached(npc, NPC_LAYER4));
 
 	/* Allocate and initialise new state. */
 	se = pool_cache_get(sess_cache, PR_NOWAIT);

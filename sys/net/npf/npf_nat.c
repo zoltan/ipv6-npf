@@ -419,7 +419,8 @@ npf_nat_create(npf_cache_t *npc, npf_natpolicy_t *np)
 	const int proto = npf_cache_ipproto(npc);
 	npf_nat_t *nt;
 
-	KASSERT(npf_iscached(npc, NPC_IP46 | NPC_LAYER4));
+	KASSERT(npf_iscached(npc, NPC_IP46));
+	KASSERT(npf_iscached(npc, NPC_LAYER4));
 
 	/* New NAT association. */
 	nt = pool_cache_get(nat_cache, PR_NOWAIT);
@@ -531,7 +532,7 @@ npf_nat_translate(npf_cache_t *npc, nbuf_t *nbuf, npf_nat_t *nt,
 	switch (npf_cache_ipproto(npc)) {
 	case IPPROTO_TCP:
 	case IPPROTO_UDP:
-		KASSERT(npf_iscached(npc, NPC_TCP | NPC_UDP));
+		KASSERT(npf_iscached(npc, NPC_TCP) || npf_iscached(npc, NPC_UDP));
 		/* Rewrite source/destination port. */
 		if (!npf_rwrport(npc, nbuf, n_ptr, di, port)) {
 			return EINVAL;
