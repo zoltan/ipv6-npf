@@ -429,7 +429,7 @@ npf_table_create(int id, int type)
 }
 
 int
-npf_table_add_entry(nl_table_t *tl, npf_addr_t *addr, npf_addr_t *mask)
+npf_table_add_entry(nl_table_t *tl, npf_addr_t *addr, npf_netmask_t *mask)
 {
 	prop_dictionary_t tldict = tl->ntl_dict, entdict;
 	prop_array_t tblents;
@@ -441,7 +441,7 @@ npf_table_add_entry(nl_table_t *tl, npf_addr_t *addr, npf_addr_t *mask)
 		return ENOMEM;
 	}
 	addrdata = prop_data_create_data(addr, sizeof(npf_addr_t));
-	maskdata = prop_data_create_data(mask, sizeof(npf_addr_t));
+	maskdata = prop_data_create_data(mask, sizeof(npf_netmask_t));
 	prop_dictionary_set(entdict, "addr", addrdata);
 	prop_dictionary_set(entdict, "mask", maskdata);
 	prop_object_release(addrdata);
