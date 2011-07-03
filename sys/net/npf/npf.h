@@ -111,6 +111,39 @@ typedef struct {
 	} npc_l4;
 } npf_cache_t;
 
+static inline npf_addr_t
+npf_calculate_mask(const npf_addr_t *addr, const npf_addr_t *mask)
+{
+	npf_addr_t result;
+
+	for(int i = 0; i < 4; i++) {
+		result.s6_addr32[i] = addr->s6_addr32[i] & mask->s6_addr32[i];
+	}
+
+	return result;
+}
+
+/*
+ * compare two addresses, either v4 or v6
+ * if the mask is NULL, ignore it
+ */
+static inline int
+npf_compare_cidr(const npf_addr_t *addr1, const npf_addr_t *mask1,
+		 const npf_addr_t *addr2, const npf_addr_t *mask2)
+{
+	for(int i = 0; i < 4; i++) {
+		const uint32_t x = mask1 != NULL ? addr1->s6_addr32[i] & mask1->s6_addr32[i] : addr1->s6_addr32[i];
+		const uint32_t y = mask2 != NULL ? addr2->s6_addr32[i] & mask2->s6_addr32[i] : addr2->s6_addr32[i];
+
+		if (x < y)
+			return -1;
+		else if (x > y)
+			return 1;
+	}
+
+	return 0;
+}
+
 static inline bool
 npf_iscached(const npf_cache_t *npc, const int inf)
 {

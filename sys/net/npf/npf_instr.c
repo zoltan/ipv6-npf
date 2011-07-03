@@ -110,7 +110,7 @@ npf_match_ip4table(npf_cache_t *npc, nbuf_t *nbuf, void *n_ptr,
 
 	memcpy(&addr, &ip4addr, sizeof(in_addr_t));
 	/* Match address against NPF table. */
-	return npf_table_match_v4addr(tid, &addr);
+	return npf_table_match_addr(tid, &addr);
 }
 
 /*
