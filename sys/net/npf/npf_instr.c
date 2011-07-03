@@ -93,7 +93,7 @@ again:
  * npf_match_ip4table: match IPv4 address against NPF table.
  */
 int
-npf_match_ip4table(npf_cache_t *npc, nbuf_t *nbuf, void *n_ptr,
+npf_match_table(npf_cache_t *npc, nbuf_t *nbuf, void *n_ptr,
     const int sd, const u_int tid)
 {
 	struct ip *ip = &npc->npc_ip.v4;

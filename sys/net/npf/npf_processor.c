@@ -296,10 +296,10 @@ cisc_like:
 		i_ptr = nc_fetch_double(i_ptr, &mask.s6_addr32[2], &mask.s6_addr32[3]);
 		cmpval = npf_match_ipmask(npc, nbuf, n_ptr, d, addr.s6_addr32, mask.s6_addr32);
 		break;
-	case NPF_OPCODE_IP4TABLE:
+	case NPF_OPCODE_TABLE:
 		/* Source/destination, NPF table ID. */
 		i_ptr = nc_fetch_double(i_ptr, &n, &i);
-		cmpval = npf_match_ip4table(npc, nbuf, n_ptr, n, i);
+		cmpval = npf_match_table(npc, nbuf, n_ptr, n, i);
 		break;
 	case NPF_OPCODE_TCP_PORTS:
 		/* Source/destination, port range. */
@@ -453,7 +453,7 @@ jmp_check:
 	case NPF_OPCODE_IP6MASK:
 		error = nc_ptr_check(&iptr, nc, sz, 9, NULL, 0);
 		break;
-	case NPF_OPCODE_IP4TABLE:
+	case NPF_OPCODE_TABLE:
 		error = nc_ptr_check(&iptr, nc, sz, 2, NULL, 0);
 		break;
 	case NPF_OPCODE_TCP_PORTS:

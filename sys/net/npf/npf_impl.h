@@ -169,7 +169,7 @@ void		npf_return_block(npf_cache_t *, nbuf_t *, const int);
 
 /* Complex instructions. */
 int		npf_match_ether(nbuf_t *, int, int, uint16_t, uint32_t *);
-int		npf_match_ip4table(npf_cache_t *, nbuf_t *, void *,
+int		npf_match_table(npf_cache_t *, nbuf_t *, void *,
 		    const int, const u_int);
 int		npf_match_ipmask(npf_cache_t *, nbuf_t *, void *,
 		    const int, const uint32_t *, const uint32_t *);

@@ -236,7 +236,7 @@ npfctl_gennc_tbl(void **ncptr, int foff, u_int tid, bool sd)
 	uint32_t *nc = *ncptr;
 
 	/* OP, direction, table ID (3 words). */
-	*nc++ = NPF_OPCODE_IP4TABLE;
+	*nc++ = NPF_OPCODE_TABLE;
 	*nc++ = (sd ? 0x01 : 0x00);
 	*nc++ = tid;
 
