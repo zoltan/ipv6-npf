@@ -114,14 +114,16 @@ npf_match_table(npf_cache_t *npc, nbuf_t *nbuf, void *n_ptr,
 }
 
 /*
- * npf_match_ip4mask: match IPv4 address against netaddr/subnet.
+ * npf_match_ipmask: match an address against netaddr/mask.
  */
 int
 npf_match_ipmask(npf_cache_t *npc, nbuf_t *nbuf, void *n_ptr,
-    const int sd, const uint32_t *netaddr, const uint32_t *subnet)
+    const int sd, const uint32_t *netaddr, const uint32_t *omask)
 {
 	uint32_t *addr;
-	int len;	
+	int len;
+	npf_addr_t gmask = npf_generate_mask((const npf_netmask_t *)omask);
+	uint32_t *mask = gmask.s6_addr32;	
 
 	if (!npf_iscached(npc, NPC_IP46)) {
 		if (!npf_fetch_ip(npc, nbuf, n_ptr)) {
@@ -142,7 +144,7 @@ npf_match_ipmask(npf_cache_t *npc, nbuf_t *nbuf, void *n_ptr,
 	}
 
 	for(int i = 0; i < len; i++)
-		if((*addr++ & *subnet++) != *netaddr++)
+		if((*addr++ & *mask++) != *netaddr++)
 			return -1;
 
 	return 0;
