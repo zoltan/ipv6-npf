@@ -55,8 +55,9 @@
  * Public declarations and definitions.
  */
 
-/* Storage of address (both for IPv4 and IPv6). */
+/* Storage of address (both for IPv4 and IPv6) and netmask */
 typedef struct in6_addr		npf_addr_t;
+typedef uint8_t			npf_netmask_t;
 
 #if defined(_KERNEL) || defined(_NPF_TESTING)
 
