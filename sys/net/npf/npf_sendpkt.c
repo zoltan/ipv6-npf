@@ -114,7 +114,7 @@ npf_return_tcp(npf_cache_t *npc, nbuf_t *nbuf)
 		memset(ip6, 0, len);
 
 		ip6->ip6_nxt = IPPROTO_TCP;
-		ip6->ip6_hlim = 255;
+		ip6->ip6_hlim = IPV6_DEFHLIM;
 		memcpy(&ip6->ip6_src, &oip->ip6_dst, sizeof(struct in6_addr));
 		memcpy(&ip6->ip6_dst, &oip->ip6_src, sizeof(struct in6_addr));		
 		ip6->ip6_plen = htons(len);
