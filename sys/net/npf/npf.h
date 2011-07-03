@@ -113,15 +113,35 @@ typedef struct {
 } npf_cache_t;
 
 static inline npf_addr_t
-npf_calculate_mask(const npf_addr_t *addr, const npf_addr_t *mask)
+npf_generate_mask(const npf_netmask_t *omask)
 {
-	npf_addr_t result;
+	uint8_t length = *(const uint8_t *)omask;
+	npf_addr_t mask;
 
 	for(int i = 0; i < 4; i++) {
-		result.s6_addr32[i] = addr->s6_addr32[i] & mask->s6_addr32[i];
+		if (length >= 32) {
+			mask.s6_addr32[i] = htonl(0xffffffff);
+			length -= 32;
+		} else {
+			mask.s6_addr32[i] = htonl(0xffffffff << (32 - length));
+		}  
 	}
 
-	return result;
+	return mask;
+}
+
+static inline npf_addr_t
+npf_calculate_masked_addr(const npf_addr_t *addr, const npf_netmask_t *omask)
+{
+        npf_addr_t mask;
+        npf_addr_t maskedaddr;
+
+        mask = npf_generate_mask(omask);
+        for(int i = 0; i < 4; i++) {
+                maskedaddr.s6_addr32[i] = addr->s6_addr32[i] & mask.s6_addr32[i];
+        }
+
+        return maskedaddr;
 }
 
 /*
@@ -129,12 +149,15 @@ npf_calculate_mask(const npf_addr_t *addr, const npf_addr_t *mask)
  * if the mask is NULL, ignore it
  */
 static inline int
-npf_compare_cidr(const npf_addr_t *addr1, const npf_addr_t *mask1,
-		 const npf_addr_t *addr2, const npf_addr_t *mask2)
+npf_compare_cidr(const npf_addr_t *addr1, const npf_netmask_t *mask1,
+		 const npf_addr_t *addr2, const npf_netmask_t *mask2)
 {
+	npf_addr_t realmask1 = npf_generate_mask(mask1);
+	npf_addr_t realmask2 = npf_generate_mask(mask2);
+
 	for(int i = 0; i < 4; i++) {
-		const uint32_t x = mask1 != NULL ? addr1->s6_addr32[i] & mask1->s6_addr32[i] : addr1->s6_addr32[i];
-		const uint32_t y = mask2 != NULL ? addr2->s6_addr32[i] & mask2->s6_addr32[i] : addr2->s6_addr32[i];
+		const uint32_t x = mask1 != NULL ? addr1->s6_addr32[i] & realmask1.s6_addr32[i] : addr1->s6_addr32[i];
+		const uint32_t y = mask2 != NULL ? addr2->s6_addr32[i] & realmask2.s6_addr32[i] : addr2->s6_addr32[i];
 
 		if (x < y)
 			return -1;
@@ -244,7 +267,7 @@ typedef struct npf_ioctl_table {
 	int			nct_action;
 	u_int			nct_tid;
 	npf_addr_t		nct_addr;
-	npf_addr_t		nct_mask;
+	npf_netmask_t		nct_mask;
 	int			_reserved;
 } npf_ioctl_table_t;
 

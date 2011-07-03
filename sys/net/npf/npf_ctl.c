@@ -120,11 +120,12 @@ npf_mk_tables(npf_tableset_t *tblset, prop_array_t tables)
 		}
 		eit = prop_array_iterator(entries);
 		while ((ent = prop_object_iterator_next(eit)) != NULL) {
-			const npf_addr_t *addr, *mask;
+			const npf_addr_t *addr;
+			const npf_netmask_t *mask;
 
 			/* Get address and mask.  Add a table entry. */
 			addr = (const npf_addr_t *)prop_data_data_nocopy(prop_dictionary_get(ent, "addr"));
-			mask = (const npf_addr_t *)prop_data_data_nocopy(prop_dictionary_get(ent, "mask"));
+			mask = (const npf_netmask_t *)prop_data_data_nocopy(prop_dictionary_get(ent, "mask"));
 			error = npf_table_add_cidr(tblset, tid, addr, mask);
 			if (error)
 				break;

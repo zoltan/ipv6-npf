@@ -64,7 +64,7 @@ struct npf_tblent {
 	} te_entry;
 	/* IPv4 CIDR block. */
 	npf_addr_t			te_addr;
-	npf_addr_t			te_mask;
+	npf_netmask_t			te_mask;
 };
 
 LIST_HEAD(npf_hashl, npf_tblent);
@@ -341,7 +341,7 @@ npf_table_check(npf_tableset_t *tset, u_int tid, int type)
  */
 int
 npf_table_add_cidr(npf_tableset_t *tset, u_int tid,
-    const npf_addr_t *addr, const npf_addr_t *mask)
+    const npf_addr_t *addr, const npf_netmask_t *mask)
 {
 	struct npf_hashl *htbl;
 	npf_tblent_t *e, *it;
@@ -352,7 +352,7 @@ npf_table_add_cidr(npf_tableset_t *tset, u_int tid,
 	/* Allocate and setup entry. */
 	e = pool_cache_get(tblent_cache, PR_WAITOK);
 	memcpy(&e->te_addr, addr, sizeof(npf_addr_t));
-	memcpy(&e->te_mask, mask, sizeof(npf_addr_t));
+	memcpy(&e->te_mask, mask, sizeof(npf_netmask_t));
 
 	/* Locks the table. */
 	t = npf_table_get(tset, tid);
@@ -363,14 +363,15 @@ npf_table_add_cidr(npf_tableset_t *tset, u_int tid,
 	switch (t->t_type) {
 	case NPF_TABLE_HASH:
 		/* Generate hash value from: address & mask. */
-		val = npf_calculate_mask(addr, mask);
+		val = npf_calculate_masked_addr(addr, mask);
 		htbl = table_hash_bucket(t, &val, sizeof(npf_addr_t));
 		/* Lookup to check for duplicates. */
 		LIST_FOREACH(it, htbl, te_entry.hashq) {
-			for(int i = 0; i < 4; i++)
-				if (it->te_addr.s6_addr32[i] == addr->s6_addr32[i] &&
-				    it->te_mask.s6_addr32[i] == mask->s6_addr32[i])
-					break;
+			if (it->te_mask == *mask) {
+				for(int i = 0; i < 4; i++)
+					if (it->te_addr.s6_addr32[i] == addr->s6_addr32[i])
+						break;
+			}
 		}
 		/* If no duplicate - insert entry. */
 		if (__predict_true(it == NULL)) {
@@ -401,12 +402,12 @@ npf_table_add_cidr(npf_tableset_t *tset, u_int tid,
  */
 int
 npf_table_rem_cidr(npf_tableset_t *tset, u_int tid,
-    const npf_addr_t *addr, const npf_addr_t *mask)
+    const npf_addr_t *addr, const npf_netmask_t *mask)
 {
 	struct npf_hashl *htbl;
 	npf_tblent_t *e;
 	npf_table_t *t;
-	in_addr_t val;
+	npf_addr_t val;
 	int error;
 
 	e = NULL;
@@ -420,13 +421,14 @@ npf_table_rem_cidr(npf_tableset_t *tset, u_int tid,
 	switch (t->t_type) {
 	case NPF_TABLE_HASH:
 		/* Generate hash value from: (address & mask). */
-		val = addr->s6_addr32[0] & mask->s6_addr32[0];
-		htbl = table_hash_bucket(t, &val, sizeof(in_addr_t));
+		val = npf_calculate_masked_addr(addr, mask);
+		htbl = table_hash_bucket(t, &val, sizeof(npf_addr_t));
 		LIST_FOREACH(e, htbl, te_entry.hashq) {
-			for (int i = 0; i < 4; i++)
-				if (e->te_addr.s6_addr32[i] == addr->s6_addr32[i] &&
-				    e->te_mask.s6_addr32[i] == mask->s6_addr32[i])
-					break;
+			if (e->te_mask == *mask) {
+				for (int i = 0; i < 4; i++)
+					if (e->te_addr.s6_addr32[i] == addr->s6_addr32[i])
+						break;
+			}
 		}
 		if (__predict_true(e != NULL)) {
 			LIST_REMOVE(e, te_entry.hashq);
@@ -436,7 +438,7 @@ npf_table_rem_cidr(npf_tableset_t *tset, u_int tid,
 		break;
 	case NPF_TABLE_RBTREE:
 		/* Key: (address & mask). */
-		val = addr->s6_addr32[0] & mask->s6_addr32[0];
+		val = npf_calculate_masked_addr(addr, mask);
 		e = rb_tree_find_node(&t->t_rbtree, &val);
 		if (__predict_true(e != NULL)) {
 			rb_tree_remove_node(&t->t_rbtree, e);
