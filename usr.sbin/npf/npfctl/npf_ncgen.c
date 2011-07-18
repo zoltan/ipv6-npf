@@ -55,13 +55,13 @@ npfctl_calc_ncsize(int nblocks[])
 	 * - 5 words each by npfctl_gennc_ports/tbl(), stored in nblocks[0].
 	 * - 6 words each by npfctl_gennc_v4cidr(), stored in nblocks[1].
 	 * - 4 words by npfctl_gennc_{icmp,tcpfl}(), stored in nblocks[2].
-	 * - 12 words each by npfctl_gennc_v6cidr(), stored in nblocks[3].
+	 * - 9 words each by npfctl_gennc_v6cidr(), stored in nblocks[3].
 	 * - 4 words by npfctl_gennc_complete(), single last fragment.
 	 */
 	return nblocks[0] * 5 * sizeof(uint32_t) +
 	    nblocks[1] * 6 * sizeof(uint32_t) +
 	    nblocks[2] * 4 * sizeof(uint32_t) +
-	    nblocks[3] * 12 * sizeof(uint32_t) +
+	    nblocks[3] * 9 * sizeof(uint32_t) +
 	    4 * sizeof(uint32_t);
 }
 
