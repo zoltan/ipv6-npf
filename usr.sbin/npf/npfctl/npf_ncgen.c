@@ -139,7 +139,7 @@ npfctl_gennc_v6cidr(void **ncptr, int foff,
 	*nc++ = NPF_OPCODE_BNE;
 	*nc++ = foff;
 
-	/* + 6 words. */
+	/* + 9 words. */
 	*ncptr = (void *)nc;
 }
 
