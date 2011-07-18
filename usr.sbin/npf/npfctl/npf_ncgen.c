@@ -79,7 +79,7 @@ npfctl_failure_offset(int nblocks[])
 	tblport_blocks = (3 + 2) * nblocks[0];
 	v4cidr_blocks = (4 + 2) * nblocks[1];
 	icmp_tcpfl = (2 + 2) * nblocks[2];
-	v6cidr_blocks = (10 + 2) * nblocks[3];
+	v6cidr_blocks = (7 + 2) * nblocks[3];
 	return tblport_blocks + v4cidr_blocks + v6cidr_blocks + icmp_tcpfl + 4;
 }
 

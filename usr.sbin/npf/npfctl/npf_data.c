@@ -271,7 +271,6 @@ npfctl_fill_table(nl_table_t *tl, char *fname)
 		if (*buf == '\n' || *buf == '#')
 			continue;
 
-		/* IPv4 CIDR: a.b.c.d/mask */
 		if (!npfctl_parse_cidr(buf, npfctl_get_addrfamily(buf), &addr, &mask)) {
 			errx(EXIT_FAILURE, "invalid table entry at line %d", l);
 		}

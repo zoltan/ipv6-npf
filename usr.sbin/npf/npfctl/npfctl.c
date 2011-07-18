@@ -277,7 +277,7 @@ npfctl(int action, int argc, char **argv)
 		}
 		break;
 	}
-	if (ret == -1) {
+	if (ret) {
 		err(EXIT_FAILURE, "ioctl");
 	}
 	close(fd);

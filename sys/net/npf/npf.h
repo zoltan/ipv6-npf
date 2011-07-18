@@ -124,6 +124,7 @@ npf_generate_mask(const npf_netmask_t *omask)
 			length -= 32;
 		} else {
 			mask.s6_addr32[i] = htonl(0xffffffff << (32 - length));
+			length = 0;
 		}  
 	}
 
