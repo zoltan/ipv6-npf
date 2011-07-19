@@ -96,19 +96,24 @@ int
 npf_match_table(npf_cache_t *npc, nbuf_t *nbuf, void *n_ptr,
     const int sd, const u_int tid)
 {
-	struct ip *ip = &npc->npc_ip.v4;
-	in_addr_t ip4addr;
 	npf_addr_t addr;
 
+	memset(&addr, 0, sizeof(npf_addr_t));
 	if (!npf_iscached(npc, NPC_IP46)) {
 		if (!npf_fetch_ip(npc, nbuf, n_ptr)) {
 			return -1;
 		}
 		KASSERT(npf_iscached(npc, NPC_IP46));
 	}
-	ip4addr = sd ? ip->ip_src.s_addr : ip->ip_dst.s_addr;
+	if (npf_iscached(npc, NPC_IP4)) {
+		in_addr_t ip4addr = sd ? npc->npc_ip.v4.ip_src.s_addr : npc->npc_ip.v4.ip_dst.s_addr;
+		memcpy(&addr, &ip4addr, sizeof(in_addr_t));
+	} else {
+		KASSERT(npf_iscached(npc, NPC_IP6));
+		struct in6_addr *ip6addr = sd ? &npc->npc_ip.v6.ip6_src : &npc->npc_ip.v6.ip6_dst;
+		memcpy(&addr, ip6addr, sizeof(struct in6_addr));
+	}
 
-	memcpy(&addr, &ip4addr, sizeof(in_addr_t));
 	/* Match address against NPF table. */
 	return npf_table_match_addr(tid, &addr);
 }

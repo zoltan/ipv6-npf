@@ -582,18 +582,16 @@ npfctl_parsetable(char *buf)
 		return PARSE_ERR();
 	}
 	PARSE_NEXT_TOKEN_NOCHECK();
-	if (p == NULL || *p != '"') {
+	if (p == NULL) {
 		return PARSE_ERR();
 	}
-	if (strcmp(p, "hash")) {
+	printf("p: '%s'\n", p);
+	if (strcmp(p, "hash") == 0) {
 		type = NPF_TABLE_HASH;
-	} else if (strcmp(p, "tree")) {
+	} else if (strcmp(p, "tree") == 0) {
 		type = NPF_TABLE_RBTREE;
 	} else {
 		errx(EXIT_FAILURE, "invalid table type '%s'", p);
-	}
-	if ((p = strchr(++p, '"')) == NULL) {
-		return PARSE_ERR();
 	}
 	*p = '\0';
 

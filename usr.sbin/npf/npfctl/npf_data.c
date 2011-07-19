@@ -207,6 +207,7 @@ npfctl_parse_cidr(char *str, sa_family_t addrfamily, npf_addr_t *addr, npf_netma
 			else
 				*mask = 128;
 		}
+		memset(addr, 0, sizeof(npf_addr_t));
 		int ret = inet_pton(addrfamily, str, addr);
 		if (ret != 1) {
 			printf("TODO: error");

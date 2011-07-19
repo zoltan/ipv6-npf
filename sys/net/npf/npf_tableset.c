@@ -459,7 +459,7 @@ npf_table_rem_cidr(npf_tableset_t *tset, u_int tid,
 }
 
 /*
- * npf_table_match_v4addr: find the table according to ID, lookup and
+ * npf_table_match_addr: find the table according to ID, lookup and
  * match the contents with specified IPv4 address.
  */
 int
@@ -484,7 +484,9 @@ npf_table_match_addr(u_int tid, const npf_addr_t *addr)
 		break;
 	case NPF_TABLE_RBTREE:
 		e = rb_tree_find_node(&t->t_rbtree, addr);
-		KASSERT(npf_compare_cidr(addr, &e->te_mask, &e->te_addr, NULL) == 0);
+		if (e != NULL) {
+			KASSERT(npf_compare_cidr(addr, &e->te_mask, &e->te_addr, NULL) == 0);
+		}
 		break;
 	default:
 		KASSERT(false);
