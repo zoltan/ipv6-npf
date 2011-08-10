@@ -123,15 +123,17 @@ npf_packet_handler(void *arg, struct mbuf **mp, ifnet_t *ifp, int di)
 			/* Reassembly is complete, we have the final packet. */
 			nbuf = (nbuf_t *)*mp;
 		} else if (npf_iscached(&npc, NPC_IP6)) {
-			int x = 40; // should really check extension headers...
+			int x = 40; // FIXME - should really check extension headers...
 			if (frag6_input(mp, &x, AF_INET6) == IPPROTO_DONE) {
 				/* More fragments should come; return. */
 				*mp = NULL;
 				return 0;
 			};
-			return 0; // FIXIT
-			// at this point, the assembly is done, we should continue processing...
-			//nbuf = (nbuf_t *)*mp;
+			nbuf = (nbuf_t *)*mp;
+			/* We have to recache the packet information, since layer 4
+			   is not processed for fragments earlier */
+			npc.npc_info = 0;
+			npf_cache_all(&npc, nbuf);
 		}
 	}
 
