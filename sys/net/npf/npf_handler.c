@@ -130,11 +130,12 @@ npf_packet_handler(void *arg, struct mbuf **mp, ifnet_t *ifp, int di)
 				return 0;
 			};
 			nbuf = (nbuf_t *)*mp;
-			/* We have to recache the packet information, since layer 4
-			   is not processed for fragments earlier */
-			npc.npc_info = 0;
-			npf_cache_all(&npc, nbuf);
 		}
+
+		/* Before reassembly, we can't cache anything above layer3,
+		   but at this point, it's reassembled - let's cache it again */
+		npf.npc_info = 0;
+		npf_cache_all(&npc, nbuf);
 	}
 
 	/* Inspect the list of sessions. */
