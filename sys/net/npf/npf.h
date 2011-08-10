@@ -81,7 +81,7 @@ typedef struct npf_hook		npf_hook_t;
 
 #define	NPC_IP4		0x01	/* Indicates fetched IPv4 header. */
 #define	NPC_IP6		0x02	/* Indicates IPv6 header. */
-#define	NPC_IPFRAG	0x04	/* IPv4 fragment. */
+#define	NPC_IPFRAG	0x04	/* IPv4/IPv6 fragment. */
 #define	NPC_LAYER4	0x08	/* Layer 4 has been fetched. */
 
 #define	NPC_TCP		0x10	/* TCP header. */

@@ -274,6 +274,9 @@ npf_fetch_ip(npf_cache_t *npc, nbuf_t *nbuf, void *n_ptr)
 		if (nbuf_fetch_datum(nbuf, n_ptr, sizeof(struct ip6_hdr), ip6)) {
 			return false;
 		}
+		if (ip6->ip6_nxt == IPPROTO_FRAGMENT) {
+			npc->npc_info |= NPC_IPFRAG;
+		}	
 		npc->npc_ipsz = sizeof(struct in6_addr);
 		npc->npc_srcip = (npf_addr_t *)&ip6->ip6_src;
 		npc->npc_dstip = (npf_addr_t *)&ip6->ip6_dst;

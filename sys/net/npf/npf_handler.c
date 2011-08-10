@@ -48,6 +48,8 @@ __KERNEL_RCSID(0, "$NetBSD: npf_handler.c,v 1.7 2011/02/02 02:20:25 rmind Exp $"
 #include <netinet/in_systm.h>
 #include <netinet/in.h>
 #include <netinet/ip_var.h>
+#include <netinet/ip6.h>
+#include <netinet6/ip6_var.h>
 
 #include "npf_impl.h"
 
@@ -99,23 +101,38 @@ npf_packet_handler(void *arg, struct mbuf **mp, ifnet_t *ifp, int di)
 	rp = NULL;
 
 	/* Cache everything.  Determine whether it is an IPv4 fragment. */
-	if (npf_cache_all(&npc, nbuf) && npf_iscached(&npc, NPC_IPFRAG)) {
-		struct ip *ip = nbuf_dataptr(*mp);
-		/*
-		 * Pass to IPv4 reassembly mechanism.
-		 */
-		if (ip_reass_packet(mp, ip) != 0) {
-			/* Failed; invalid fragment(s) or packet. */
-			error = EINVAL;
-			se = NULL;
-			goto out;
+	/* Cache IP information */
+	npf_cache_all(&npc, nbuf);
+	
+	if (npf_iscached(&npc, NPC_IPFRAG)) {
+		if (npf_iscached(&npc, NPC_IP4)) {
+			struct ip *ip = nbuf_dataptr(*mp);
+			/*
+		 		* Pass to IPv4 reassembly mechanism.
+		 	*/
+			if (ip_reass_packet(mp, ip) != 0) {
+				/* Failed; invalid fragment(s) or packet. */
+				error = EINVAL;
+				se = NULL;
+				goto out;
+			}
+			if (*mp == NULL) {
+				/* More fragments should come; return. */
+				return 0;
+			}
+			/* Reassembly is complete, we have the final packet. */
+			nbuf = (nbuf_t *)*mp;
+		} else if (npf_iscached(&npc, NPC_IP6)) {
+			int x = 40; // should really check extension headers...
+			if (frag6_input(mp, &x, AF_INET6) == IPPROTO_DONE) {
+				/* More fragments should come; return. */
+				*mp = NULL;
+				return 0;
+			};
+			return 0; // FIXIT
+			// at this point, the assembly is done, we should continue processing...
+			//nbuf = (nbuf_t *)*mp;
 		}
-		if (*mp == NULL) {
-			/* More fragments should come; return. */
-			return 0;
-		}
-		/* Reassembly is complete, we have the final packet. */
-		nbuf = (nbuf_t *)*mp;
 	}
 
 	/* Inspect the list of sessions. */
