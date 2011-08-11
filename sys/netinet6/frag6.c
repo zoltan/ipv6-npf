@@ -64,66 +64,13 @@ static void frag6_insque(struct ip6q *, struct ip6q *);
 static void frag6_remque(struct ip6q *);
 static void frag6_freef(struct ip6q *);
 
-static int ip6q_locked;
 static int frag6_drainwanted;
 
 u_int frag6_nfragpackets;
 u_int frag6_nfrags;
 struct	ip6q ip6q;	/* ip6 reassemble queue */
 
-static inline int ip6q_lock_try(void);
-static inline void ip6q_unlock(void);
-
-static inline int
-ip6q_lock_try(void)
-{
-	int s;
-
-	/*
-	 * Use splvm() -- we're bloking things that would cause
-	 * mbuf allocation.
-	 */
-	s = splvm();
-	if (ip6q_locked) {
-		splx(s);
-		return (0);
-	}
-	ip6q_locked = 1;
-	splx(s);
-	return (1);
-}
-
-static inline void
-ip6q_unlock(void)
-{
-	int s;
-
-	s = splvm();
-	ip6q_locked = 0;
-	splx(s);
-}
-
-#ifdef DIAGNOSTIC
-#define	IP6Q_LOCK()							\
-do {									\
-	if (ip6q_lock_try() == 0) {					\
-		printf("%s:%d: ip6q already locked\n", __FILE__, __LINE__); \
-		panic("ip6q_lock");					\
-	}								\
-} while (/*CONSTCOND*/ 0)
-#define	IP6Q_LOCK_CHECK()						\
-do {									\
-	if (ip6q_locked == 0) {						\
-		printf("%s:%d: ip6q lock not held\n", __FILE__, __LINE__); \
-		panic("ip6q lock check");				\
-	}								\
-} while (/*CONSTCOND*/ 0)
-#else
-#define	IP6Q_LOCK()		(void) ip6q_lock_try()
-#define	IP6Q_LOCK_CHECK()	/* nothing */
-#endif
-
-#define	IP6Q_UNLOCK()		ip6q_unlock()
+static kmutex_t	frag6_lock;
 
 #ifndef offsetof		/* XXX */
 #define	offsetof(type, member)	((size_t)(&((type *)0)->member))
@@ -137,6 +84,7 @@ frag6_init(void)
 {
 
 	ip6q.ip6q_next = ip6q.ip6q_prev = &ip6q;
+	mutex_init(&frag6_lock, MUTEX_DEFAULT, IPL_VM);
 }
 
 /*
@@ -228,7 +176,7 @@ frag6_input(struct mbuf **mp, int *offp, int proto)
 	/* offset now points to data portion */
 	offset += sizeof(struct ip6_frag);
 
-	IP6Q_LOCK();
+	mutex_enter(&frag6_lock);
 
 	/*
 	 * Enforce upper bound on number of fragments.
@@ -269,7 +217,6 @@ frag6_input(struct mbuf **mp, int *offp, int proto)
 		if (q6 == NULL)
 			goto dropfrag;
 		memset(q6, 0, sizeof(*q6));
-
 		frag6_insque(q6, &ip6q);
 
 		/* ip6q_nxt will be filled afterwards, from 1st fragment */
@@ -310,14 +257,14 @@ frag6_input(struct mbuf **mp, int *offp, int proto)
 			icmp6_error(m, ICMP6_PARAM_PROB, ICMP6_PARAMPROB_HEADER,
 			    offset - sizeof(struct ip6_frag) +
 			    offsetof(struct ip6_frag, ip6f_offlg));
-			IP6Q_UNLOCK();
+			mutex_exit(&frag6_lock);
 			return (IPPROTO_DONE);
 		}
 	} else if (fragoff + frgpartlen > IPV6_MAXPACKET) {
 		icmp6_error(m, ICMP6_PARAM_PROB, ICMP6_PARAMPROB_HEADER,
 			    offset - sizeof(struct ip6_frag) +
 				offsetof(struct ip6_frag, ip6f_offlg));
-		IP6Q_UNLOCK();
+		mutex_exit(&frag6_lock);
 		return (IPPROTO_DONE);
 	}
 	/*
@@ -476,13 +423,13 @@ insert:
 	for (af6 = q6->ip6q_down; af6 != (struct ip6asfrag *)q6;
 	     af6 = af6->ip6af_down) {
 		if (af6->ip6af_off != next) {
-			IP6Q_UNLOCK();
+			mutex_exit(&frag6_lock);
 			return IPPROTO_DONE;
 		}
 		next += af6->ip6af_frglen;
 	}
 	if (af6->ip6af_up->ip6af_mff) {
-		IP6Q_UNLOCK();
+		mutex_exit(&frag6_lock);
 		return IPPROTO_DONE;
 	}
 
@@ -566,14 +513,14 @@ insert:
 	*mp = m;
 	*offp = offset;
 
-	IP6Q_UNLOCK();
+	mutex_exit(&frag6_lock);
 	return nxt;
 
  dropfrag:
+	mutex_exit(&frag6_lock);
 	in6_ifstat_inc(dstifp, ifs6_reass_fail);
 	IP6_STATINC(IP6_STAT_FRAGDROPPED);
 	m_freem(m);
-	IP6Q_UNLOCK();
 	return IPPROTO_DONE;
 }
 
@@ -586,7 +533,7 @@ frag6_freef(struct ip6q *q6)
 {
 	struct ip6asfrag *af6, *down6;
 
-	IP6Q_LOCK_CHECK();
+	KASSERT(mutex_owned(&frag6_lock));
 
 	for (af6 = q6->ip6q_down; af6 != (struct ip6asfrag *)q6;
 	     af6 = down6) {
@@ -629,7 +576,7 @@ void
 frag6_enq(struct ip6asfrag *af6, struct ip6asfrag *up6)
 {
 
-	IP6Q_LOCK_CHECK();
+	KASSERT(mutex_owned(&frag6_lock));
 
 	af6->ip6af_up = up6;
 	af6->ip6af_down = up6->ip6af_down;
@@ -644,7 +591,7 @@ void
 frag6_deq(struct ip6asfrag *af6)
 {
 
-	IP6Q_LOCK_CHECK();
+	KASSERT(mutex_owned(&frag6_lock));
 
 	af6->ip6af_up->ip6af_down = af6->ip6af_down;
 	af6->ip6af_down->ip6af_up = af6->ip6af_up;
@@ -654,7 +601,7 @@ void
 frag6_insque(struct ip6q *new, struct ip6q *old)
 {
 
-	IP6Q_LOCK_CHECK();
+	KASSERT(mutex_owned(&frag6_lock));
 
 	new->ip6q_prev = old;
 	new->ip6q_next = old->ip6q_next;
@@ -666,7 +613,7 @@ void
 frag6_remque(struct ip6q *p6)
 {
 
-	IP6Q_LOCK_CHECK();
+	KASSERT(mutex_owned(&frag6_lock));
 
 	p6->ip6q_prev->ip6q_next = p6->ip6q_next;
 	p6->ip6q_next->ip6q_prev = p6->ip6q_prev;
@@ -694,7 +641,7 @@ frag6_slowtimo(void)
 	mutex_enter(softnet_lock);
 	KERNEL_LOCK(1, NULL);
 
-	IP6Q_LOCK();
+	mutex_enter(&frag6_lock);
 	q6 = ip6q.ip6q_next;
 	if (q6)
 		while (q6 != &ip6q) {
@@ -717,7 +664,7 @@ frag6_slowtimo(void)
 		/* XXX in6_ifstat_inc(ifp, ifs6_reass_fail) */
 		frag6_freef(ip6q.ip6q_prev);
 	}
-	IP6Q_UNLOCK();
+	mutex_exit(&frag6_lock);
 
 #if 0
 	/*
@@ -747,13 +694,13 @@ frag6_drain(void)
 {
 
 	KERNEL_LOCK(1, NULL);
-	if (ip6q_lock_try() != 0) {
+	if (mutex_tryenter(&frag6_lock)) {
 		while (ip6q.ip6q_next != &ip6q) {
 			IP6_STATINC(IP6_STAT_FRAGDROPPED);
 			/* XXX in6_ifstat_inc(ifp, ifs6_reass_fail) */
 			frag6_freef(ip6q.ip6q_next);
 		}
-		IP6Q_UNLOCK();
+		mutex_exit(&frag6_lock);
 	}
 	KERNEL_UNLOCK_ONE(NULL);
 }
