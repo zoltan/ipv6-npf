@@ -133,7 +133,7 @@ npf_packet_handler(void *arg, struct mbuf **mp, ifnet_t *ifp, int di)
 		nbuf = (nbuf_t *)*mp;
 		/* Before reassembly, we can't cache anything above layer3,
 		   but at this point, it's reassembled - let's cache it again */
-		npf.npc_info = 0;
+		npc.npc_info = 0;
 		npf_cache_all(&npc, nbuf);
 	}
 
