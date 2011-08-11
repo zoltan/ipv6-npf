@@ -120,8 +120,6 @@ npf_packet_handler(void *arg, struct mbuf **mp, ifnet_t *ifp, int di)
 				/* More fragments should come; return. */
 				return 0;
 			}
-			/* Reassembly is complete, we have the final packet. */
-			nbuf = (nbuf_t *)*mp;
 		} else if (npf_iscached(&npc, NPC_IP6)) {
 			int x = 40; // FIXME - should really check extension headers...
 			if (frag6_input(mp, &x, AF_INET6) == IPPROTO_DONE) {
@@ -129,9 +127,10 @@ npf_packet_handler(void *arg, struct mbuf **mp, ifnet_t *ifp, int di)
 				*mp = NULL;
 				return 0;
 			};
-			nbuf = (nbuf_t *)*mp;
 		}
 
+		/* Reassembly is complete, we have the final packet. */
+		nbuf = (nbuf_t *)*mp;
 		/* Before reassembly, we can't cache anything above layer3,
 		   but at this point, it's reassembled - let's cache it again */
 		npf.npc_info = 0;
