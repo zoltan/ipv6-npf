@@ -84,7 +84,7 @@ frag6_init(void)
 {
 
 	ip6q.ip6q_next = ip6q.ip6q_prev = &ip6q;
-	mutex_init(&frag6_lock, MUTEX_DEFAULT, IPL_VM);
+	mutex_init(&frag6_lock, MUTEX_DEFAULT, IPL_SOFTNET);
 }
 
 /*
