@@ -638,9 +638,6 @@ frag6_slowtimo(void)
 {
 	struct ip6q *q6;
 
-	mutex_enter(softnet_lock);
-	KERNEL_LOCK(1, NULL);
-
 	mutex_enter(&frag6_lock);
 	q6 = ip6q.ip6q_next;
 	if (q6)
@@ -676,8 +673,6 @@ frag6_slowtimo(void)
 	rtcache_free(&ipsrcchk_rt);
 #endif
 
-	KERNEL_UNLOCK_ONE(NULL);
-	mutex_exit(softnet_lock);
 }
 
 void
@@ -693,7 +688,6 @@ void
 frag6_drain(void)
 {
 
-	KERNEL_LOCK(1, NULL);
 	if (mutex_tryenter(&frag6_lock)) {
 		while (ip6q.ip6q_next != &ip6q) {
 			IP6_STATINC(IP6_STAT_FRAGDROPPED);
@@ -702,5 +696,4 @@ frag6_drain(void)
 		}
 		mutex_exit(&frag6_lock);
 	}
-	KERNEL_UNLOCK_ONE(NULL);
 }
