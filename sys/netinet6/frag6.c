@@ -261,7 +261,7 @@ frag6_input(struct mbuf **mp, int *offp, int proto)
 			return (IPPROTO_DONE);
 		}
 	} else if (fragoff + frgpartlen > IPV6_MAXPACKET) {
-		mutex_exit(&frag_lock);
+		mutex_exit(&frag6_lock);
 		icmp6_error(m, ICMP6_PARAM_PROB, ICMP6_PARAMPROB_HEADER,
 			    offset - sizeof(struct ip6_frag) +
 				offsetof(struct ip6_frag, ip6f_offlg));
