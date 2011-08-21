@@ -99,6 +99,8 @@ typedef struct {
 	npf_addr_t *		npc_dstip;
 	/* Size (v4 or v6) of IP addresses. */
 	int			npc_ipsz;
+	size_t			npc_hlen;
+	int			npc_next_proto;
 	/* IPv4, IPv6. */
 	union {
 		struct ip	v4;
@@ -186,28 +188,14 @@ static inline int
 npf_cache_ipproto(const npf_cache_t *npc)
 {
 	KASSERT(npf_iscached(npc, NPC_IP46));
-	if (npc->npc_info & NPC_IP4) {
-		return npc->npc_ip.v4.ip_p;
-	} else if (npc->npc_info & NPC_IP6) {
-		return npc->npc_ip.v6.ip6_nxt;
-	}
-
-	KASSERT(false);
-	return 0;
+	return npc->npc_next_proto;
 }
 
 static inline int
 npf_cache_hlen(const npf_cache_t *npc, nbuf_t *nbuf)
 {
 	KASSERT(npf_iscached(npc, NPC_IP46));
-	if (npc->npc_info & NPC_IP4) {
-		return npc->npc_ip.v4.ip_hl << 2;
-	} else if(npc->npc_info & NPC_IP6) {
-		return 40;
-	}
-
-	KASSERT(false);
-	return 0;
+	return npc->npc_hlen;
 }
 
 /* Network buffer interface. */
