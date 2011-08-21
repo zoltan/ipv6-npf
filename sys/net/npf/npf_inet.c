@@ -279,35 +279,35 @@ npf_fetch_ip(npf_cache_t *npc, nbuf_t *nbuf, void *n_ptr)
 
 		struct ip6_ext ip6e;
 		int nxt = npc->npc_ip.v6.ip6_nxt;
-		int off = sizeof(struct ip6_hdr);
+		size_t off = sizeof(struct ip6_hdr);
 		bool fragment = false;
-		nbuf_advance(&nbuf, n_ptr, sizeof(struct ip6_hdr));
+		size_t toskip = sizeof(struct ip6_hdr);
 		bool processing_ends = false;
 		while (!processing_ends) {
+			/* advance the length of the previous known header,
+			   and fetch the next extension header's length */
+			nbuf_advfetch(&nbuf, &n_ptr, toskip, sizeof(struct ip6_ext), &ip6e);
+
 			switch (nxt) {
 			case IPPROTO_DSTOPTS:
 			case IPPROTO_ROUTING:
-				nbuf_fetch_datum(nbuf, n_ptr, sizeof(struct ip6_ext), &ip6e);
-				nbuf_advance(&nbuf, n_ptr, (ip6e.ip6e_len + 1) << 3);
-				off += (ip6e.ip6e_len + 1) << 3;
-				nxt = ip6e.ip6e_nxt;
+				toskip = (ip6e.ip6e_len + 1) << 3;
 				break;
 			case IPPROTO_FRAGMENT:
 				fragment = true;
-				nbuf_fetch_datum(nbuf, n_ptr, sizeof(struct ip6_ext), &ip6e);
-				nbuf_advance(&nbuf, n_ptr, sizeof(struct ip6_frag));
-				off += sizeof(struct ip6_frag);
-				nxt = ip6e.ip6e_nxt;
+				toskip = sizeof(struct ip6_frag);
 				break;
 			case IPPROTO_AH:
-				nbuf_fetch_datum(nbuf, n_ptr, sizeof(struct ip6_ext), &ip6e);
-				nbuf_advance(&nbuf, n_ptr, (ip6e.ip6e_len + 2) << 2);
-				off += (ip6e.ip6e_len + 2) << 2;
-				nxt = ip6e.ip6e_nxt;
+				toskip = (ip6e.ip6e_len + 2) << 2;
 				break;
 			default:
 				processing_ends = true;
 				break;
+			}
+
+			if (!processing_ends) {
+				off += toskip;
+				nxt = ip6e.ip6e_nxt;
 			}
 		}
 		if (fragment) {
