@@ -281,11 +281,15 @@ npf_fetch_ip(npf_cache_t *npc, nbuf_t *nbuf, void *n_ptr)
 		bool fragment = false;
 		size_t toskip = sizeof(struct ip6_hdr);
 		bool processing_ends = false;
+		npc->npc_next_proto = ip6->ip6_nxt;
+		npc->npc_hlen = 0; 
 
 		while (!processing_ends) {
 			/* advance the length of the previous known header,
 			   and fetch the next extension header's length */
-			nbuf_advfetch(&nbuf, &n_ptr, toskip, sizeof(struct ip6_ext), &ip6e);
+			if (nbuf_advfetch(&nbuf, &n_ptr, toskip, sizeof(struct ip6_ext), &ip6e)) {
+				return false;
+			}
 
 			switch (npc->npc_next_proto) {
 			case IPPROTO_DSTOPTS:
@@ -304,8 +308,9 @@ npf_fetch_ip(npf_cache_t *npc, nbuf_t *nbuf, void *n_ptr)
 				break;
 			}
 
+			npc->npc_hlen += toskip;
+			
 			if (!processing_ends) {
-				npc->npc_hlen += toskip;
 				npc->npc_next_proto = ip6e.ip6e_nxt;
 			}
 		}
