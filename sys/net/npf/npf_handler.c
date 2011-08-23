@@ -268,11 +268,10 @@ npf_register_pfil(void)
 	error = pfil_add_hook(npf_packet_handler, NULL,
 	    PFIL_WAITOK | PFIL_ALL, npf_ph_inet);
 	KASSERT(error == 0);
-	
+
 	error = pfil_add_hook(npf_packet_handler, NULL,
 	    PFIL_WAITOK | PFIL_ALL, npf_ph_inet6);
 	KASSERT(error == 0);
-	printf("npf: registering pfil hooks\n");
 fail:
 	KERNEL_UNLOCK_ONE(NULL);
 	mutex_exit(softnet_lock);
