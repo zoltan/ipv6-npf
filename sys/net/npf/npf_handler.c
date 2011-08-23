@@ -121,9 +121,10 @@ npf_packet_handler(void *arg, struct mbuf **mp, ifnet_t *ifp, int di)
 				return 0;
 			}
 		} else if (npf_iscached(&npc, NPC_IP6)) {
-			size_t hlen = npf_cache_hlen(npc);
+			/* frag6_input's offset is the start of the fragment header */
+			size_t hlen = 40;
 
-			if (frag6_input(mp, &x, AF_INET6) == IPPROTO_DONE) {
+			if (frag6_input(mp, &hlen, AF_INET6) == IPPROTO_DONE) {
 				/* More fragments should come; return. */
 				*mp = NULL;
 				return 0;

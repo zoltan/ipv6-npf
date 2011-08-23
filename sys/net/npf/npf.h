@@ -140,7 +140,7 @@ npf_calculate_masked_addr(const npf_addr_t *addr, const npf_netmask_t *omask)
 	npf_addr_t maskedaddr;
 
 	mask = npf_generate_mask(omask);
-	or(int i = 0; i < 4; i++) {
+	for(int i = 0; i < 4; i++) {
 		maskedaddr.s6_addr32[i] = addr->s6_addr32[i] & mask.s6_addr32[i];
 	}
 
