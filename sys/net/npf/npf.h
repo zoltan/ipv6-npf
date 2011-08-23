@@ -155,20 +155,21 @@ static inline int
 npf_compare_cidr(const npf_addr_t *addr1, const npf_netmask_t *mask1,
 		 const npf_addr_t *addr2, const npf_netmask_t *mask2)
 {
-	npf_addr_t realmask1;
-	npf_addr_t realmask2;
+	npf_addr_t realmask1, realmask2;
 
-	if (mask1 != NULL)
+	if (mask1 != NULL) {
 		realmask1 = npf_generate_mask(mask1);
-	if (mask2 != NULL)
+	}
+	if (mask2 != NULL) {
 		realmask2 = npf_generate_mask(mask2);
+	}
 	for (int i = 0; i < 4; i++) {
 		const uint32_t x = mask1 != NULL ? addr1->s6_addr32[i] & realmask1.s6_addr32[i] : addr1->s6_addr32[i];
 		const uint32_t y = mask2 != NULL ? addr2->s6_addr32[i] & realmask2.s6_addr32[i] : addr2->s6_addr32[i];
 		if (x < y) {
 			return -1;
 		}
-		else if (x > y) {
+		if (x > y) {
 			return 1;
 		}
 	}
