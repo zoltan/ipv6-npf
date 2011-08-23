@@ -164,7 +164,8 @@ table_rbtree_cmp_nodes(void *ctx, const void *n1, const void *n2)
 	const npf_tblent_t * const te1 = n1;
 	const npf_tblent_t * const te2 = n2;
 
-	return npf_compare_cidr(&te1->te_addr, &te1->te_mask, &te2->te_addr, &te2->te_mask);
+	return npf_compare_cidr(&te1->te_addr, &te1->te_mask,
+				&te2->te_addr, &te2->te_mask);
 }
 
 static signed int
