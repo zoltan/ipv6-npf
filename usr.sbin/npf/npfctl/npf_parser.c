@@ -585,7 +585,6 @@ npfctl_parsetable(char *buf)
 	if (p == NULL) {
 		return PARSE_ERR();
 	}
-	printf("p: '%s'\n", p);
 	if (strcmp(p, "hash") == 0) {
 		type = NPF_TABLE_HASH;
 	} else if (strcmp(p, "tree") == 0) {
