@@ -68,7 +68,6 @@ npf_return_tcp(npf_cache_t *npc, nbuf_t *nbuf)
 	int tcpdlen, len;
 	uint32_t win;
 
-
 	/* Fetch relevant data. */
 	KASSERT(npf_iscached(npc, NPC_IP46));
 	KASSERT(npf_iscached(npc, NPC_LAYER4));
