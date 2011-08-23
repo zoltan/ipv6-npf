@@ -136,15 +136,15 @@ npf_generate_mask(const npf_netmask_t *omask)
 static inline npf_addr_t
 npf_calculate_masked_addr(const npf_addr_t *addr, const npf_netmask_t *omask)
 {
-        npf_addr_t mask;
-        npf_addr_t maskedaddr;
+	npf_addr_t mask;
+	npf_addr_t maskedaddr;
 
-        mask = npf_generate_mask(omask);
-        for(int i = 0; i < 4; i++) {
-                maskedaddr.s6_addr32[i] = addr->s6_addr32[i] & mask.s6_addr32[i];
-        }
+	mask = npf_generate_mask(omask);
+	or(int i = 0; i < 4; i++) {
+		maskedaddr.s6_addr32[i] = addr->s6_addr32[i] & mask.s6_addr32[i];
+	}
 
-        return maskedaddr;
+	return maskedaddr;
 }
 
 /*
@@ -154,7 +154,6 @@ npf_calculate_masked_addr(const npf_addr_t *addr, const npf_netmask_t *omask)
 static inline int
 npf_compare_cidr(const npf_addr_t *addr1, const npf_netmask_t *mask1,
 		 const npf_addr_t *addr2, const npf_netmask_t *mask2)
-
 {
 	npf_addr_t realmask1;
 	npf_addr_t realmask2;
