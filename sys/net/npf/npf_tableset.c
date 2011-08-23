@@ -434,7 +434,7 @@ npf_table_rem_cidr(npf_tableset_t *tset, u_int tid,
 				const uint32_t *addr2 = addr->s6_addr32;
 				const size_t len = sizeof(npf_addr_t);
 
-				if (memcpy(addr1, addr2, len) == 0) {
+				if (memcmp(addr1, addr2, len) == 0) {
 					break;
 				}
 			}
