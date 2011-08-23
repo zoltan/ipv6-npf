@@ -120,7 +120,7 @@ npf_generate_mask(const npf_netmask_t *omask)
 	uint8_t length = *(const uint8_t *)omask;
 	npf_addr_t mask;
 
-	for(int i = 0; i < 4; i++) {
+	for (int i = 0; i < 4; i++) {
 		if (length >= 32) {
 			mask.s6_addr32[i] = htonl(0xffffffff);
 			length -= 32;
@@ -140,7 +140,7 @@ npf_calculate_masked_addr(const npf_addr_t *addr, const npf_netmask_t *omask)
 	npf_addr_t maskedaddr;
 
 	mask = npf_generate_mask(omask);
-	for(int i = 0; i < 4; i++) {
+	for (int i = 0; i < 4; i++) {
 		maskedaddr.s6_addr32[i] = addr->s6_addr32[i] & mask.s6_addr32[i];
 	}
 
@@ -162,7 +162,7 @@ npf_compare_cidr(const npf_addr_t *addr1, const npf_netmask_t *mask1,
 		realmask1 = npf_generate_mask(mask1);
 	if (mask2 != NULL)
 		realmask2 = npf_generate_mask(mask2);
-	for(int i = 0; i < 4; i++) {
+	for (int i = 0; i < 4; i++) {
 		const uint32_t x = mask1 != NULL ? addr1->s6_addr32[i] & realmask1.s6_addr32[i] : addr1->s6_addr32[i];
 		const uint32_t y = mask2 != NULL ? addr2->s6_addr32[i] & realmask2.s6_addr32[i] : addr2->s6_addr32[i];
 		if (x < y) {
