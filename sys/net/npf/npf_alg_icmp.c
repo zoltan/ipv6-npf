@@ -249,8 +249,9 @@ npfa_icmp_session(npf_cache_t *npc, nbuf_t *nbuf, void *keyptr)
 
 	/* Advance to ICMP header. */
 	void *n_ptr = nbuf_dataptr(nbuf);
+	const size_t hlen = npf_cache_hlen(npc, nbuf);
 
-	if ((n_ptr = nbuf_advance(&nbuf, n_ptr, npf_cache_hlen(npc, nbuf))) == NULL) {
+	if ((n_ptr = nbuf_advance(&nbuf, n_ptr, hlen)) == NULL) {
 		return false;
 	}
 
