@@ -430,9 +430,13 @@ npf_table_rem_cidr(npf_tableset_t *tset, u_int tid,
 		htbl = table_hash_bucket(t, &val, sizeof(npf_addr_t));
 		LIST_FOREACH(e, htbl, te_entry.hashq) {
 			if (e->te_mask == *mask) {
-				for (int i = 0; i < 4; i++)
-					if (e->te_addr.s6_addr32[i] == addr->s6_addr32[i])
-						break;
+				const uint32_t *addr1 = e->te_addr.s6_addr32;
+				const uint32_t *addr2 = addr->s6_addr32;
+				const size_t len = sizeof(npf_addr_t);
+
+				if (memcpy(addr1, addr2, len) == 0) {
+					break;
+				}
 			}
 		}
 		if (__predict_true(e != NULL)) {
