@@ -368,9 +368,13 @@ npf_table_add_cidr(npf_tableset_t *tset, u_int tid,
 		/* Lookup to check for duplicates. */
 		LIST_FOREACH(it, htbl, te_entry.hashq) {
 			if (it->te_mask == *mask) {
-				for(int i = 0; i < 4; i++)
-					if (it->te_addr.s6_addr32[i] == addr->s6_addr32[i])
-						break;
+				const uint32_t *addr1 = it->te_addr.s6_addr32;
+				const uint32_t *addr2 = addr->s6_addr32;
+				const size_t len = sizeof(npf_addr_t);
+
+				if (memcmp(addr1, addr2, len) == 0) {
+					break;
+				}
 			}
 		}
 		/* If no duplicate - insert entry. */
