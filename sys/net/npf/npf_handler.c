@@ -121,7 +121,8 @@ npf_packet_handler(void *arg, struct mbuf **mp, ifnet_t *ifp, int di)
 				return 0;
 			}
 		} else if (npf_iscached(&npc, NPC_IP6)) {
-			int x = 40; // FIXME - should really check extension headers...
+			size_t hlen = npf_cache_hlen(npc);
+
 			if (frag6_input(mp, &x, AF_INET6) == IPPROTO_DONE) {
 				/* More fragments should come; return. */
 				*mp = NULL;
