@@ -103,7 +103,7 @@ npf_packet_handler(void *arg, struct mbuf **mp, ifnet_t *ifp, int di)
 	/* Cache everything.  Determine whether it is an IPv4 fragment. */
 	/* Cache IP information */
 	npf_cache_all(&npc, nbuf);
-	
+
 	if (npf_iscached(&npc, NPC_IPFRAG)) {
 		if (npf_iscached(&npc, NPC_IP4)) {
 			struct ip *ip = nbuf_dataptr(*mp);
