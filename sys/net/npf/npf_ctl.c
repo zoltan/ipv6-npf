@@ -125,7 +125,7 @@ npf_mk_tables(npf_tableset_t *tblset, prop_array_t tables)
 
 			/* Get address and mask.  Add a table entry. */
 			addr = (const npf_addr_t *)prop_data_data_nocopy(prop_dictionary_get(ent, "addr"));
-			prop_dictionary_get_uint8(ent, "mask", (uint8_t *)(&mask));
+			prop_dictionary_get_uint8(ent, "mask", &mask);
 			error = npf_table_add_cidr(tblset, tid, addr, mask);
 			if (error)
 				break;
