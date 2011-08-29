@@ -277,7 +277,7 @@ npfctl_fill_table(nl_table_t *tl, char *fname)
 		}
 
 		/* Create and add table entry. */
-		npf_table_add_entry(tl, &addr, &mask);
+		npf_table_add_entry(tl, &addr, mask);
 		l++;
 	}
 	if (buf != NULL) {

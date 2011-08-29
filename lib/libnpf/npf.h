@@ -84,7 +84,7 @@ nl_nat_t *	npf_nat_create(int, int, u_int, npf_addr_t *, int, in_port_t);
 int		npf_nat_insert(nl_config_t *, nl_nat_t *, pri_t);
 
 nl_table_t *	npf_table_create(int, int);
-int		npf_table_add_entry(nl_table_t *, npf_addr_t *, npf_netmask_t *);
+int		npf_table_add_entry(nl_table_t *, npf_addr_t *, npf_netmask_t);
 bool		npf_table_exists_p(nl_config_t *, u_int);
 int		npf_table_insert(nl_config_t *, nl_table_t *);
 void		npf_table_destroy(nl_table_t *);
