@@ -317,9 +317,9 @@ npfctl_rulenc_cidr(void **nc, int nblocks[], var_t *dat, bool sd, sa_family_t ad
 		    nblocks[3]--;
 		foff = npfctl_failure_offset(nblocks);
 		if (addrfamily == AF_INET) 
-			npfctl_gennc_v4cidr(nc, foff, &addr, &mask, sd);
+			npfctl_gennc_v4cidr(nc, foff, &addr, mask, sd);
 		else if (addrfamily == AF_INET6)
-			npfctl_gennc_v6cidr(nc, foff, &addr, &mask, sd);
+			npfctl_gennc_v6cidr(nc, foff, &addr, mask, sd);
 	}
 }
 

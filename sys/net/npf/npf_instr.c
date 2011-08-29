@@ -115,7 +115,7 @@ npf_match_table(npf_cache_t *npc, nbuf_t *nbuf, void *n_ptr,
  */
 int
 npf_match_ipmask(npf_cache_t *npc, nbuf_t *nbuf, void *n_ptr,
-    const int sd, const uint32_t *netaddr, const uint8_t *omask)
+    const int sd, const npf_addr_t *netaddr, npf_netmask_t omask)
 {
 	npf_addr_t *addr1, addr2;
 
@@ -125,17 +125,14 @@ npf_match_ipmask(npf_cache_t *npc, nbuf_t *nbuf, void *n_ptr,
 		}
 		KASSERT(npf_iscached(npc, NPC_IP46));
 	}
-
-	if (*omask == 0)
+	if (omask == 0)
 		return 0;
 
 	addr1 = sd ? npc->npc_srcip : npc->npc_dstip;
-	addr2 = npf_calculate_masked_addr((const npf_addr_t*)netaddr, *omask);
-	
-	if (memcmp(addr1, &addr2, sizeof(npf_addr_t))) {
+	npf_calculate_masked_addr(&addr2, netaddr, omask);
+	if (memcmp(addr1, &addr2, npc->npc_ipsz)) {
 		return -1;
 	}
-
 	return 0;
 }
 

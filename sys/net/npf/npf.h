@@ -114,38 +114,34 @@ typedef struct {
 	} npc_l4;
 } npf_cache_t;
 
-static inline npf_addr_t
-npf_generate_mask(const npf_netmask_t omask)
+static inline void
+npf_generate_mask(npf_addr_t *dst, const npf_netmask_t omask)
 {
 	uint8_t length = omask;
-	npf_addr_t mask;
 
+	KASSERT(length <= 128);
+	memset(dst, 0, sizeof(npf_addr_t));
 	for (int i = 0; i < 4; i++) {
 		if (length >= 32) {
-			mask.s6_addr32[i] = htonl(0xffffffff);
+			dst->s6_addr32[i] = htonl(0xffffffff);
 			length -= 32;
 		} else {
-			mask.s6_addr32[i] = htonl(0xffffffff << (32 - length));
+			dst->s6_addr32[i] = htonl(0xffffffff << (32 - length));
 			length = 0;
 		}  
 	}
-
-	return mask;
 }
 
-static inline npf_addr_t
-npf_calculate_masked_addr(const npf_addr_t *addr, const npf_netmask_t omask)
+static inline void
+npf_calculate_masked_addr(npf_addr_t *dst, const npf_addr_t *src, const npf_netmask_t omask)
 {
 	npf_addr_t mask;
-	npf_addr_t maskedaddr;
 
-	mask = npf_generate_mask(omask);
+	npf_generate_mask(&mask, omask);
 	for (int i = 0; i < 4; i++) {
-		maskedaddr.s6_addr32[i] =
-			addr->s6_addr32[i] & mask.s6_addr32[i];
+		dst->s6_addr32[i] =
+			src->s6_addr32[i] & mask.s6_addr32[i];
 	}
-
-	return maskedaddr;
 }
 
 /*
@@ -159,10 +155,10 @@ npf_compare_cidr(const npf_addr_t *addr1, const npf_netmask_t mask1,
 	npf_addr_t realmask1, realmask2;
 
 	if (mask1 != 255) {
-		realmask1 = npf_generate_mask(mask1);
+		npf_generate_mask(&realmask1, mask1);
 	}
 	if (mask2 != 255) {
-		realmask2 = npf_generate_mask(mask2);
+		npf_generate_mask(&realmask2, mask2);
 	}
 	for (int i = 0; i < 4; i++) {
 		const uint32_t x = mask1 != 255 ?

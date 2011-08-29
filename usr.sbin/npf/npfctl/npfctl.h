@@ -92,9 +92,9 @@ size_t		npfctl_failure_offset(int []);
 
 void		npfctl_gennc_ether(void **, int, uint16_t);
 void		npfctl_gennc_v4cidr(void **, int,
-		    const npf_addr_t *, const npf_netmask_t *, bool);
+		    const npf_addr_t *, const npf_netmask_t, bool);
 void		npfctl_gennc_v6cidr(void **, int,
-		    const npf_addr_t *, const npf_netmask_t *, bool);
+		    const npf_addr_t *, const npf_netmask_t, bool);
 void		npfctl_gennc_icmp(void **, int, int, int);
 void		npfctl_gennc_tcpfl(void **, int , uint8_t, uint8_t);
 void		npfctl_gennc_ports(void **, int,
