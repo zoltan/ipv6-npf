@@ -115,9 +115,9 @@ typedef struct {
 } npf_cache_t;
 
 static inline npf_addr_t
-npf_generate_mask(const npf_netmask_t *omask)
+npf_generate_mask(const npf_netmask_t omask)
 {
-	uint8_t length = *(const uint8_t *)omask;
+	uint8_t length = omask;
 	npf_addr_t mask;
 
 	for (int i = 0; i < 4; i++) {
@@ -134,7 +134,7 @@ npf_generate_mask(const npf_netmask_t *omask)
 }
 
 static inline npf_addr_t
-npf_calculate_masked_addr(const npf_addr_t *addr, const npf_netmask_t *omask)
+npf_calculate_masked_addr(const npf_addr_t *addr, const npf_netmask_t omask)
 {
 	npf_addr_t mask;
 	npf_addr_t maskedaddr;
@@ -153,22 +153,22 @@ npf_calculate_masked_addr(const npf_addr_t *addr, const npf_netmask_t *omask)
  * if the mask is NULL, ignore it
  */
 static inline int
-npf_compare_cidr(const npf_addr_t *addr1, const npf_netmask_t *mask1,
-		 const npf_addr_t *addr2, const npf_netmask_t *mask2)
+npf_compare_cidr(const npf_addr_t *addr1, const npf_netmask_t mask1,
+		 const npf_addr_t *addr2, const npf_netmask_t mask2)
 {
 	npf_addr_t realmask1, realmask2;
 
-	if (mask1 != NULL) {
+	if (mask1 != 255) {
 		realmask1 = npf_generate_mask(mask1);
 	}
-	if (mask2 != NULL) {
+	if (mask2 != 255) {
 		realmask2 = npf_generate_mask(mask2);
 	}
 	for (int i = 0; i < 4; i++) {
-		const uint32_t x = mask1 != NULL ?
+		const uint32_t x = mask1 != 255 ?
 				addr1->s6_addr32[i] & realmask1.s6_addr32[i] : 
 				addr1->s6_addr32[i];
-		const uint32_t y = mask2 != NULL ?
+		const uint32_t y = mask2 != 255 ?
 				addr2->s6_addr32[i] & realmask2.s6_addr32[i] :
 				addr2->s6_addr32[i];
 		if (x < y) {

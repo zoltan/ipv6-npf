@@ -121,11 +121,11 @@ npf_mk_tables(npf_tableset_t *tblset, prop_array_t tables)
 		eit = prop_array_iterator(entries);
 		while ((ent = prop_object_iterator_next(eit)) != NULL) {
 			const npf_addr_t *addr;
-			const npf_netmask_t *mask;
+			npf_netmask_t mask;
 
 			/* Get address and mask.  Add a table entry. */
 			addr = (const npf_addr_t *)prop_data_data_nocopy(prop_dictionary_get(ent, "addr"));
-			mask = (const npf_netmask_t *)prop_data_data_nocopy(prop_dictionary_get(ent, "mask"));
+			prop_dictionary_get_uint8(ent, "mask", (uint8_t *)(&mask));
 			error = npf_table_add_cidr(tblset, tid, addr, mask);
 			if (error)
 				break;
@@ -602,11 +602,11 @@ npfctl_table(void *data)
 	switch (nct->nct_action) {
 	case NPF_IOCTL_TBLENT_ADD:
 		error = npf_table_add_cidr(NULL, nct->nct_tid,
-		    &nct->nct_addr, &nct->nct_mask);
+		    &nct->nct_addr, nct->nct_mask);
 		break;
 	case NPF_IOCTL_TBLENT_REM:
 		error = npf_table_rem_cidr(NULL, nct->nct_tid,
-		    &nct->nct_addr, &nct->nct_mask);
+		    &nct->nct_addr, nct->nct_mask);
 		break;
 	default:
 		/* XXX */

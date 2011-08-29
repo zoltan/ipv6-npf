@@ -115,12 +115,9 @@ npf_match_table(npf_cache_t *npc, nbuf_t *nbuf, void *n_ptr,
  */
 int
 npf_match_ipmask(npf_cache_t *npc, nbuf_t *nbuf, void *n_ptr,
-    const int sd, const uint32_t *netaddr, const uint32_t *omask)
+    const int sd, const uint32_t *netaddr, const uint8_t *omask)
 {
-	uint32_t *addr;
-	int len;
-	npf_addr_t gmask; 
-	uint32_t *mask; 	
+	npf_addr_t *addr1, addr2;
 
 	if (!npf_iscached(npc, NPC_IP46)) {
 		if (!npf_fetch_ip(npc, nbuf, n_ptr)) {
@@ -129,26 +126,15 @@ npf_match_ipmask(npf_cache_t *npc, nbuf_t *nbuf, void *n_ptr,
 		KASSERT(npf_iscached(npc, NPC_IP46));
 	}
 
-	if (*omask == 0) {
+	if (*omask == 0)
 		return 0;
-	} else {
-		gmask = npf_generate_mask((const npf_netmask_t *)omask);
-		mask = gmask.s6_addr32;
-	}
-	if (npc->npc_info & NPC_IP4) {
-		addr = sd ? &(npc->npc_ip.v4.ip_src.s_addr) : &(npc->npc_ip.v4.ip_dst.s_addr);
-		len = 1;
-	} else if (npc->npc_info & NPC_IP6) {
-		len = 4;
-		addr = sd ? npc->npc_ip.v6.ip6_src.s6_addr32 : npc->npc_ip.v6.ip6_dst.s6_addr32;
-	} else { 
-		KASSERT(false);
+
+	addr1 = sd ? npc->npc_srcip : npc->npc_dstip;
+	addr2 = npf_calculate_masked_addr((const npf_addr_t*)netaddr, *omask);
+	
+	if (memcmp(addr1, &addr2, sizeof(npf_addr_t))) {
 		return -1;
 	}
-
-	for(int i = 0; i < len; i++)
-		if((*addr++ & *mask++) != *netaddr++)
-			return -1;
 
 	return 0;
 }

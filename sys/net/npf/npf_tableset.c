@@ -164,8 +164,8 @@ table_rbtree_cmp_nodes(void *ctx, const void *n1, const void *n2)
 	const npf_tblent_t * const te1 = n1;
 	const npf_tblent_t * const te2 = n2;
 
-	return npf_compare_cidr(&te1->te_addr, &te1->te_mask,
-				&te2->te_addr, &te2->te_mask);
+	return npf_compare_cidr(&te1->te_addr, te1->te_mask,
+				&te2->te_addr, te2->te_mask);
 }
 
 static signed int
@@ -174,7 +174,7 @@ table_rbtree_cmp_key(void *ctx, const void *n1, const void *key)
 	const npf_tblent_t * const te = n1;
 	const npf_addr_t *t2 = key;
 
-	return npf_compare_cidr(&te->te_addr, &te->te_mask, t2, NULL);
+	return npf_compare_cidr(&te->te_addr, te->te_mask, t2, 255);
 }
 
 static const rb_tree_ops_t table_rbtree_ops = {
@@ -342,7 +342,7 @@ npf_table_check(npf_tableset_t *tset, u_int tid, int type)
  */
 int
 npf_table_add_cidr(npf_tableset_t *tset, u_int tid,
-    const npf_addr_t *addr, const npf_netmask_t *mask)
+    const npf_addr_t *addr, const npf_netmask_t mask)
 {
 	struct npf_hashl *htbl;
 	npf_tblent_t *e, *it;
@@ -353,7 +353,7 @@ npf_table_add_cidr(npf_tableset_t *tset, u_int tid,
 	/* Allocate and setup entry. */
 	e = pool_cache_get(tblent_cache, PR_WAITOK);
 	memcpy(&e->te_addr, addr, sizeof(npf_addr_t));
-	memcpy(&e->te_mask, mask, sizeof(npf_netmask_t));
+	e->te_mask = mask;
 
 	/* Locks the table. */
 	t = npf_table_get(tset, tid);
@@ -368,7 +368,7 @@ npf_table_add_cidr(npf_tableset_t *tset, u_int tid,
 		htbl = table_hash_bucket(t, &val, sizeof(npf_addr_t));
 		/* Lookup to check for duplicates. */
 		LIST_FOREACH(it, htbl, te_entry.hashq) {
-			if (it->te_mask == *mask) {
+			if (it->te_mask == mask) {
 				const uint32_t *addr1 = it->te_addr.s6_addr32;
 				const uint32_t *addr2 = addr->s6_addr32;
 				const size_t len = sizeof(npf_addr_t);
@@ -407,7 +407,7 @@ npf_table_add_cidr(npf_tableset_t *tset, u_int tid,
  */
 int
 npf_table_rem_cidr(npf_tableset_t *tset, u_int tid,
-    const npf_addr_t *addr, const npf_netmask_t *mask)
+    const npf_addr_t *addr, const npf_netmask_t mask)
 {
 	struct npf_hashl *htbl;
 	npf_tblent_t *e;
@@ -429,7 +429,7 @@ npf_table_rem_cidr(npf_tableset_t *tset, u_int tid,
 		val = npf_calculate_masked_addr(addr, mask);
 		htbl = table_hash_bucket(t, &val, sizeof(npf_addr_t));
 		LIST_FOREACH(e, htbl, te_entry.hashq) {
-			if (e->te_mask == *mask) {
+			if (e->te_mask == mask) {
 				const uint32_t *addr1 = e->te_addr.s6_addr32;
 				const uint32_t *addr2 = addr->s6_addr32;
 				const size_t len = sizeof(npf_addr_t);
@@ -487,14 +487,14 @@ npf_table_match_addr(u_int tid, const npf_addr_t *addr)
 	case NPF_TABLE_HASH:
 		htbl = table_hash_bucket(t, addr, sizeof(npf_addr_t));
 		LIST_FOREACH(e, htbl, te_entry.hashq) {
-			if (npf_compare_cidr(addr, &e->te_mask, &e->te_addr, NULL) == 0)
+			if (npf_compare_cidr(addr, e->te_mask, &e->te_addr, 255) == 0)
 				break;			
 		}
 		break;
 	case NPF_TABLE_RBTREE:
 		e = rb_tree_find_node(&t->t_rbtree, addr);
 		if (e != NULL) {
-			KASSERT(npf_compare_cidr(addr, &e->te_mask, &e->te_addr, NULL) == 0);
+			KASSERT(npf_compare_cidr(addr, e->te_mask, &e->te_addr, 255) == 0);
 		}
 		break;
 	default:
