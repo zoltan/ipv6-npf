@@ -358,6 +358,7 @@ npf_fetch_udp(npf_cache_t *npc, nbuf_t *nbuf, void *n_ptr)
 {
 	struct ip *ip = &npc->npc_ip.v4;
 	struct udphdr *uh;
+	size_t hlen;
 
 	/* Must have IP header processed for its length and protocol. */
 	if (!npf_iscached(npc, NPC_IP46) && !npf_fetch_ip(npc, nbuf, n_ptr)) {
@@ -367,9 +368,10 @@ npf_fetch_udp(npf_cache_t *npc, nbuf_t *nbuf, void *n_ptr)
 		return false;
 	}
 	uh = &npc->npc_l4.udp;
+	hlen = npf_cache_hlen(npc, nbuf);
 
 	/* Fetch ICMP header. */
-	if (nbuf_advfetch(&nbuf, &n_ptr, npf_cache_hlen(npc, nbuf), sizeof(struct udphdr), uh)) {
+	if (nbuf_advfetch(&nbuf, &n_ptr, hlen, sizeof(struct udphdr), uh)) {
 		return false;
 	}
 
@@ -389,6 +391,7 @@ npf_fetch_icmp(npf_cache_t *npc, nbuf_t *nbuf, void *n_ptr)
 	struct ip *ip = &npc->npc_ip.v4;
 	struct icmp *ic;
 	u_int iclen;
+	size_t hlen;
 
 	/* Must have IP header processed for its length and protocol. */
 	if (!npf_iscached(npc, NPC_IP46) && !npf_fetch_ip(npc, nbuf, n_ptr)) {
@@ -398,10 +401,11 @@ npf_fetch_icmp(npf_cache_t *npc, nbuf_t *nbuf, void *n_ptr)
 		return false;
 	}
 	ic = &npc->npc_l4.icmp;
+	hlen = npf_cache_hlen(npc, nbuf);
 
 	/* Fetch basic ICMP header, up to the "data" point. */
 	iclen = offsetof(struct icmp, icmp_data);
-	if (nbuf_advfetch(&nbuf, &n_ptr, npf_cache_hlen(npc, nbuf), iclen, ic)) {
+	if (nbuf_advfetch(&nbuf, &n_ptr, hlen, iclen, ic)) {
 		return false;
 	}
 
