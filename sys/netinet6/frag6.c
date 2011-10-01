@@ -120,7 +120,7 @@ frag6_init(void)
  * Fragment input
  */
 int
-frag6_input(struct mbuf **mp, int *offp, int proto)
+frag6_in(struct mbuf **mp, int *offp)
 {
 	struct rtentry *rt;
 	struct mbuf *m = *mp, *t;
@@ -141,7 +141,7 @@ frag6_input(struct mbuf **mp, int *offp, int proto)
 	ip6 = mtod(m, struct ip6_hdr *);
 	IP6_EXTHDR_GET(ip6f, struct ip6_frag *, m, offset, sizeof(*ip6f));
 	if (ip6f == NULL)
-		return IPPROTO_DONE;
+		return -1;
 
 	dstifp = NULL;
 	/* find the destination interface of the packet. */
@@ -153,7 +153,7 @@ frag6_input(struct mbuf **mp, int *offp, int proto)
 	if (ip6->ip6_plen == 0) {
 		icmp6_error(m, ICMP6_PARAM_PROB, ICMP6_PARAMPROB_HEADER, offset);
 		in6_ifstat_inc(dstifp, ifs6_reass_fail);
-		return IPPROTO_DONE;
+		return -1;
 	}
 
 	/*
@@ -167,7 +167,7 @@ frag6_input(struct mbuf **mp, int *offp, int proto)
 		icmp6_error(m, ICMP6_PARAM_PROB, ICMP6_PARAMPROB_HEADER,
 		    offsetof(struct ip6_hdr, ip6_plen));
 		in6_ifstat_inc(dstifp, ifs6_reass_fail);
-		return IPPROTO_DONE;
+		return -1;
 	}
 
 	IP6_STATINC(IP6_STAT_FRAGMENTS);
@@ -424,12 +424,14 @@ insert:
 	     af6 = af6->ip6af_down) {
 		if (af6->ip6af_off != next) {
 			mutex_exit(&frag6_lock);
+			printf("innen megyunk ki\n");
 			return IPPROTO_DONE;
 		}
 		next += af6->ip6af_frglen;
 	}
 	if (af6->ip6af_up->ip6af_mff) {
 		mutex_exit(&frag6_lock);
+		printf("masik helyrol megyunk ki\n");
 		return IPPROTO_DONE;
 	}
 
@@ -514,6 +516,7 @@ insert:
 	*offp = offset;
 
 	mutex_exit(&frag6_lock);
+
 	return nxt;
 
  dropfrag:
@@ -522,6 +525,19 @@ insert:
 	IP6_STATINC(IP6_STAT_FRAGDROPPED);
 	m_freem(m);
 	return IPPROTO_DONE;
+}
+
+int
+frag6_input(struct mbuf **mp, int *offp, int proto)
+{
+	frag6_in(mp, offp);
+	return IPPROTO_DONE;
+}
+
+int
+ip6_reass_packet(struct mbuf **mp, int offset)
+{
+	return 0;
 }
 
 /*

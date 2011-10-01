@@ -122,13 +122,16 @@ npf_packet_handler(void *arg, struct mbuf **mp, ifnet_t *ifp, int di)
 			}
 		} else if (npf_iscached(&npc, NPC_IP6)) {
 			/* frag6_input's offset is the start of the fragment header */
-			size_t hlen = 40;
+			size_t hlen = npf_cache_hlen(&npc, nbuf);
 
-			if (frag6_input(mp, &hlen, AF_INET6) == IPPROTO_DONE) {
-				/* More fragments should come; return. */
-				*mp = NULL;
+			if (ip6_reass_packet(mp, hlen) != 0) {
+				error = EINVAL;
+				se = NULL;
+				goto out;
+			}
+			if (*mp == NULL) {
 				return 0;
-			};
+			}
 		}
 
 		/* Reassembly is complete, we have the final packet. */
