@@ -141,7 +141,7 @@ frag6_in(struct mbuf **mp, int *offp)
 	ip6 = mtod(m, struct ip6_hdr *);
 	IP6_EXTHDR_GET(ip6f, struct ip6_frag *, m, offset, sizeof(*ip6f));
 	if (ip6f == NULL)
-		return IPPROTO_DONE;
+		return -1;
 
 	dstifp = NULL;
 	/* find the destination interface of the packet. */
@@ -153,7 +153,7 @@ frag6_in(struct mbuf **mp, int *offp)
 	if (ip6->ip6_plen == 0) {
 		icmp6_error(m, ICMP6_PARAM_PROB, ICMP6_PARAMPROB_HEADER, offset);
 		in6_ifstat_inc(dstifp, ifs6_reass_fail);
-		return IPPROTO_DONE;
+		return -1;
 	}
 
 	/*
@@ -167,7 +167,7 @@ frag6_in(struct mbuf **mp, int *offp)
 		icmp6_error(m, ICMP6_PARAM_PROB, ICMP6_PARAMPROB_HEADER,
 		    offsetof(struct ip6_hdr, ip6_plen));
 		in6_ifstat_inc(dstifp, ifs6_reass_fail);
-		return IPPROTO_DONE;
+		return -1;
 	}
 
 	IP6_STATINC(IP6_STAT_FRAGMENTS);
@@ -258,14 +258,14 @@ frag6_in(struct mbuf **mp, int *offp)
 			icmp6_error(m, ICMP6_PARAM_PROB, ICMP6_PARAMPROB_HEADER,
 			    offset - sizeof(struct ip6_frag) +
 			    offsetof(struct ip6_frag, ip6f_offlg));
-			return (IPPROTO_DONE);
+			return -1;
 		}
 	} else if (fragoff + frgpartlen > IPV6_MAXPACKET) {
 		mutex_exit(&frag6_lock);
 		icmp6_error(m, ICMP6_PARAM_PROB, ICMP6_PARAMPROB_HEADER,
 			    offset - sizeof(struct ip6_frag) +
 				offsetof(struct ip6_frag, ip6f_offlg));
-		return (IPPROTO_DONE);
+		return -1;
 	}
 	/*
 	 * If it's the first fragment, do the above check for each
@@ -424,13 +424,13 @@ insert:
 	     af6 = af6->ip6af_down) {
 		if (af6->ip6af_off != next) {
 			mutex_exit(&frag6_lock);
-			return IPPROTO_DONE;
+			return 0;
 		}
 		next += af6->ip6af_frglen;
 	}
 	if (af6->ip6af_up->ip6af_mff) {
 		mutex_exit(&frag6_lock);
-		return IPPROTO_DONE;
+		return 0;
 	}
 
 	/*
@@ -521,16 +521,19 @@ insert:
 	in6_ifstat_inc(dstifp, ifs6_reass_fail);
 	IP6_STATINC(IP6_STAT_FRAGDROPPED);
 	m_freem(m);
-	return IPPROTO_DONE;
+	return -1;
 }
 
 int
 frag6_input(struct mbuf **mp, int *offp, int proto)
 {
-	return frag6_in(mp, offp);
+	int ret = frag6_in(mp, offp);
+
+	if (ret > 0) {
+		return ret;
+	}
+	return IPPROTO_DONE;
 }
-
-
 
 /*
  * Free a fragment reassembly header and all
