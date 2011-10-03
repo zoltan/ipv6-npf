@@ -357,6 +357,7 @@ void	ip6_statinc(u_int);
 int	route6_input(struct mbuf **, int *, int);
 
 void	frag6_init(void);
+int	frag6_in(struct mbuf **, int *);
 int	frag6_input(struct mbuf **, int *, int);
 void	frag6_slowtimo(void);
 void	frag6_fasttimo(void);

@@ -120,7 +120,7 @@ frag6_init(void)
  * Fragment input
  */
 int
-frag6_input(struct mbuf **mp, int *offp, int proto)
+frag6_in(struct mbuf **mp, int *offp)
 {
 	struct rtentry *rt;
 	struct mbuf *m = *mp, *t;
@@ -523,6 +523,14 @@ insert:
 	m_freem(m);
 	return IPPROTO_DONE;
 }
+
+int
+frag6_input(struct mbuf **mp, int *offp, int proto)
+{
+	return frag6_in(mp, offp);
+}
+
+
 
 /*
  * Free a fragment reassembly header and all
