@@ -535,6 +535,16 @@ frag6_input(struct mbuf **mp, int *offp, int proto)
 	return IPPROTO_DONE;
 }
 
+int
+ip6_reass_packet(struct mbuf **mp, int offset) {
+	int ret = frag6_in(mp, &offset);
+
+	if (ret <= 0) {
+		*mp = NULL;
+	}
+	return ret;
+}
+
 /*
  * Free a fragment reassembly header and all
  * associated datagrams.
