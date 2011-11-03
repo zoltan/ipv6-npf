@@ -174,7 +174,7 @@ table_rbtree_cmp_key(void *ctx, const void *n1, const void *key)
 	const npf_tblent_t * const te = n1;
 	const npf_addr_t *t2 = key;
 
-	return npf_compare_cidr(&te->te_addr, te->te_mask, t2, 255);
+	return npf_compare_cidr(&te->te_addr, te->te_mask, t2, NPF_NO_NETMASK);
 }
 
 static const rb_tree_ops_t table_rbtree_ops = {
@@ -487,14 +487,14 @@ npf_table_match_addr(u_int tid, const npf_addr_t *addr)
 	case NPF_TABLE_HASH:
 		htbl = table_hash_bucket(t, addr, sizeof(npf_addr_t));
 		LIST_FOREACH(e, htbl, te_entry.hashq) {
-			if (npf_compare_cidr(addr, e->te_mask, &e->te_addr, 255) == 0)
+			if (npf_compare_cidr(addr, e->te_mask, &e->te_addr, NPF_NO_NETMASK) == 0)
 				break;			
 		}
 		break;
 	case NPF_TABLE_RBTREE:
 		e = rb_tree_find_node(&t->t_rbtree, addr);
 		if (e != NULL) {
-			KASSERT(npf_compare_cidr(addr, e->te_mask, &e->te_addr, 255) == 0);
+			KASSERT(npf_compare_cidr(addr, e->te_mask, &e->te_addr, NPF_NO_NETMASK) == 0);
 		}
 		break;
 	default:
