@@ -283,8 +283,10 @@ npf_fetch_ip(npf_cache_t *npc, nbuf_t *nbuf, void *n_ptr)
 		npc->npc_hlen = 0; 
 
 		do {
-			/* advance the length of the previous known header,
-			   and fetch the next extension header's length */
+			/*
+			 * advance the length of the previous known header,
+			 * and fetch the next extension header's length
+			 */
 			if (nbuf_advfetch(&nbuf, &n_ptr, toskip, sizeof(struct ip6_ext), &ip6e)) {
 				return false;
 			}
