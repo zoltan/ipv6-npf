@@ -108,7 +108,7 @@ npf_packet_handler(void *arg, struct mbuf **mp, ifnet_t *ifp, int di)
 		if (npf_iscached(&npc, NPC_IP4)) {
 			struct ip *ip = nbuf_dataptr(*mp);
 			/*
-		 		* Pass to IPv4 reassembly mechanism.
+		 	 * Pass to IPv4 reassembly mechanism.
 		 	*/
 			if (ip_reass_packet(mp, ip) != 0) {
 				/* Failed; invalid fragment(s) or packet. */
@@ -130,7 +130,7 @@ npf_packet_handler(void *arg, struct mbuf **mp, ifnet_t *ifp, int di)
 				error = EINVAL;
 				se = NULL;
 				goto out;
-			} 
+			}
 			if (*mp == NULL) {
 				/* More fragments should come; return. */
 				return 0;
@@ -139,8 +139,10 @@ npf_packet_handler(void *arg, struct mbuf **mp, ifnet_t *ifp, int di)
 
 		/* Reassembly is complete, we have the final packet. */
 		nbuf = (nbuf_t *)*mp;
-		/* Before reassembly, we can't cache anything above layer3,
-		   but at this point, it's reassembled - let's cache it again */
+		/*
+		 * Before reassembly, we can't cache anything above layer3,
+		 * but at this point, it's reassembled - let's cache it again
+		 */
 		npc.npc_info = 0;
 		npf_cache_all(&npc, nbuf);
 	}
