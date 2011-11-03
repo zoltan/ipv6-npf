@@ -137,13 +137,11 @@ npf_return_tcp(npf_cache_t *npc, nbuf_t *nbuf)
 		th->th_sum = in_cksum(m, len);
 
 		 /* Second fill of IPv4 header, fill correct IP length. */
- 		ip->ip_v = IPVERSION;
-        	ip->ip_hl = sizeof(struct ip) >> 2;
-	        ip->ip_tos = IPTOS_LOWDELAY;
-        	ip->ip_len = htons(len);
-	        ip->ip_ttl = DEFAULT_IP_TTL;
-
-
+		ip->ip_v = IPVERSION;
+		ip->ip_hl = sizeof(struct ip) >> 2;
+		ip->ip_tos = IPTOS_LOWDELAY;
+		ip->ip_len = htons(len);
+		ip->ip_ttl = DEFAULT_IP_TTL;
 	} else {
 		th->th_sum = in6_cksum(m, IPPROTO_TCP, sizeof(struct ip6_hdr), sizeof(struct tcphdr));
 	}
