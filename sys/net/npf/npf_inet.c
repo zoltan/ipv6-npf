@@ -277,13 +277,12 @@ npf_fetch_ip(npf_cache_t *npc, nbuf_t *nbuf, void *n_ptr)
 		}
 
 		struct ip6_ext ip6e;
-		bool fragment = false;
 		size_t toskip = sizeof(struct ip6_hdr);
 		bool processing_ends = false;
 		npc->npc_next_proto = ip6->ip6_nxt;
 		npc->npc_hlen = 0; 
 
-		while (!processing_ends) {
+		do {
 			/* advance the length of the previous known header,
 			   and fetch the next extension header's length */
 			if (nbuf_advfetch(&nbuf, &n_ptr, toskip, sizeof(struct ip6_ext), &ip6e)) {
@@ -296,7 +295,7 @@ npf_fetch_ip(npf_cache_t *npc, nbuf_t *nbuf, void *n_ptr)
 				toskip = (ip6e.ip6e_len + 1) << 3;
 				break;
 			case IPPROTO_FRAGMENT:
-				fragment = true;
+				npc->npc_info |= NPC_IPFRAG;
 				toskip = sizeof(struct ip6_frag);
 				break;
 			case IPPROTO_AH:
@@ -312,11 +311,8 @@ npf_fetch_ip(npf_cache_t *npc, nbuf_t *nbuf, void *n_ptr)
 			if (!processing_ends) {
 				npc->npc_next_proto = ip6e.ip6e_nxt;
 			}
-		}
+		} while (!processing_ends);
 
-		if (fragment) {
-			npc->npc_info |= NPC_IPFRAG;
-		}
 		npc->npc_ipsz = sizeof(struct in6_addr);
 		npc->npc_srcip = (npf_addr_t *)&ip6->ip6_src;
 		npc->npc_dstip = (npf_addr_t *)&ip6->ip6_dst;
