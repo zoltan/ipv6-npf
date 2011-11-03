@@ -298,7 +298,6 @@ npf_unregister_pfil(void)
 	KERNEL_LOCK(1, NULL);
 
 	if (npf_ph_if) {
-		printf("npf: unregistering pfil hooks\n");
 		(void)pfil_remove_hook(npf_packet_handler, NULL,
 		    PFIL_ALL, npf_ph_inet6);
 		(void)pfil_remove_hook(npf_packet_handler, NULL,
