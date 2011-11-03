@@ -169,9 +169,11 @@ npfctl_get_addrfamily(const char *ostr)
 	hint.ai_family = PF_UNSPEC;
 	hint.ai_flags = AI_NUMERICHOST;
 	ret = getaddrinfo(str, NULL, &hint, &res);
-	if (ret)
-		return AF_UNSPEC;
-	family = res->ai_family;
+	if (ret) {
+		family = AF_UNSPEC;
+	} else {
+		family = res->ai_family;
+	}
 	freeaddrinfo(res);
 	free(str);
 	return family;
