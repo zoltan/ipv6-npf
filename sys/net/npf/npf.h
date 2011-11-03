@@ -57,7 +57,9 @@
 
 /* Storage of address (both for IPv4 and IPv6) and netmask */
 typedef struct in6_addr		npf_addr_t;
-typedef uint8_t			npf_netmask_t;
+typedef uint_fast8_t		npf_netmask_t;
+
+#define	NPF_NO_NETMASK		(npf_netmask_t)~0
 
 #if defined(_KERNEL) || defined(_NPF_TESTING)
 
@@ -114,6 +116,7 @@ typedef struct {
 	} npc_l4;
 } npf_cache_t;
 
+/* Max length is 32 for IPv4 and 128 for IPv6 */
 static inline void
 npf_generate_mask(npf_addr_t *dst, const npf_netmask_t omask)
 {
@@ -154,17 +157,17 @@ npf_compare_cidr(const npf_addr_t *addr1, const npf_netmask_t mask1,
 {
 	npf_addr_t realmask1, realmask2;
 
-	if (mask1 != 255) {
+	if (mask1 != NPF_NO_NETMASK) {
 		npf_generate_mask(&realmask1, mask1);
 	}
-	if (mask2 != 255) {
+	if (mask2 != NPF_NO_NETMASK) {
 		npf_generate_mask(&realmask2, mask2);
 	}
 	for (int i = 0; i < 4; i++) {
-		const uint32_t x = mask1 != 255 ?
+		const uint32_t x = mask1 != NPF_NO_NETMASK ?
 				addr1->s6_addr32[i] & realmask1.s6_addr32[i] : 
 				addr1->s6_addr32[i];
-		const uint32_t y = mask2 != 255 ?
+		const uint32_t y = mask2 != NPF_NO_NETMASK ?
 				addr2->s6_addr32[i] & realmask2.s6_addr32[i] :
 				addr2->s6_addr32[i];
 		if (x < y) {
