@@ -120,7 +120,7 @@ typedef struct {
 static inline void
 npf_generate_mask(npf_addr_t *dst, const npf_netmask_t omask)
 {
-	uint8_t length = omask;
+	uint_fast8_t length = omask;
 
 	KASSERT(length <= 128);
 	memset(dst, 0, sizeof(npf_addr_t));
