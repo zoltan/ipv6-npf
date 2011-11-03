@@ -542,7 +542,7 @@ ip6_reass_packet(struct mbuf **mp, int offset) {
 	if (ret <= 0) {
 		*mp = NULL;
 	}
-	return ret;
+	return ret < 0 ? ret : 0;
 }
 
 /*

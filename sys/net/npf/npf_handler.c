@@ -89,7 +89,7 @@ npf_packet_handler(void *arg, struct mbuf **mp, ifnet_t *ifp, int di)
 	npf_ruleset_t *rlset;
 	npf_rule_t *rl;
 	npf_rproc_t *rp;
-	int retfl, error;
+	int retfl, error, ret;
 
 	/*
 	 * Initialise packet information cache.
@@ -99,6 +99,7 @@ npf_packet_handler(void *arg, struct mbuf **mp, ifnet_t *ifp, int di)
 	error = 0;
 	retfl = 0;
 	rp = NULL;
+	ret = 0;
 
 	/* Cache everything.  Determine whether it is an IPv4 fragment. */
 	/* Cache IP information */
@@ -107,38 +108,30 @@ npf_packet_handler(void *arg, struct mbuf **mp, ifnet_t *ifp, int di)
 	if (npf_iscached(&npc, NPC_IPFRAG)) {
 		if (npf_iscached(&npc, NPC_IP4)) {
 			struct ip *ip = nbuf_dataptr(*mp);
-			/*
-		 	 * Pass to IPv4 reassembly mechanism.
-		 	*/
-			if (ip_reass_packet(mp, ip) != 0) {
-				/* Failed; invalid fragment(s) or packet. */
-				error = EINVAL;
-				se = NULL;
-				goto out;
-			}
-			if (*mp == NULL) {
-				/* More fragments should come; return. */
-				return 0;
-			}
+		 	/* Pass to IPv4 reassembly mechanism. */
+			ret = ip_reass_packet(mp, ip);
 		} else if (npf_iscached(&npc, NPC_IP6)) {
 			/* frag6_input's offset is the start of the fragment header */
 			size_t hlen = npf_cache_hlen(&npc, nbuf);
-			int ret;
 
+			/* Pass to IPv6 reassembly mechanism. */
 			ret = ip6_reass_packet(mp, hlen);
-			if (ret < 0) {
-				error = EINVAL;
-				se = NULL;
-				goto out;
-			}
-			if (*mp == NULL) {
-				/* More fragments should come; return. */
-				return 0;
-			}
+		} else {
+			KASSERT(false);
 		}
 
+		if (ret != 0) {
+			error = EINVAL;
+			se = NULL;
+			goto out;
+		}
+		if (*mp == NULL) {
+			/* More fragments should come; return. */
+			return 0;
+		}
 		/* Reassembly is complete, we have the final packet. */
 		nbuf = (nbuf_t *)*mp;
+
 		/*
 		 * Before reassembly, we can't cache anything above layer3,
 		 * but at this point, it's reassembled - let's cache it again
