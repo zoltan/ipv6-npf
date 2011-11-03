@@ -119,7 +119,7 @@ frag6_init(void)
 /*
  * Fragment input
  */
-int
+static int
 frag6_in(struct mbuf **mp, int *offp)
 {
 	struct rtentry *rt;
